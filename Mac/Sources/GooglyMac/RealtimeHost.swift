@@ -249,11 +249,11 @@ final class RealtimeHost {
             text += ". When they say \"this\", \"that\" or \"here\", they mean what's at their mouse pointer."
             if let prefix { text = prefix + "\nHere's the screen now (ids have changed):\n" + text }
             if !ComputerControl.isTrusted, Settings.shared.computerControl {
-                text += "\n(Clickable controls are hidden until the user allows Googly Eyes under Accessibility.)"
+                text += "\n(Clickable controls are hidden until the user allows Bluey under Accessibility.)"
             }
             return (text, shot.jpeg.base64EncodedString())
         } catch {
-            let problem = "I can't see the screen. Screen Recording permission is off for Googly Eyes on the Mac."
+            let problem = "I can't see the screen. Screen Recording permission is off for Bluey on the Mac."
             return (prefix.map { $0 + " " + problem } ?? problem, nil)
         }
     }

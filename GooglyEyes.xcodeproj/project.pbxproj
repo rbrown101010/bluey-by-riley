@@ -335,7 +335,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = co.visionairy.googly.phone;
-				PRODUCT_NAME = "Googly Eyes";
+				PRODUCT_NAME = Bluey;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -355,7 +355,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = co.visionairy.googly.phone;
-				PRODUCT_NAME = "Googly Eyes";
+				PRODUCT_NAME = Bluey;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};

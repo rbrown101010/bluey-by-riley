@@ -13,14 +13,14 @@ enum ComputerControl {
         var errorDescription: String? {
             switch self {
             case .notTrusted:
-                return "I need Accessibility permission to click and type. The user has to allow Googly Eyes in System Settings, Privacy & Security, Accessibility."
+                return "I need Accessibility permission to click and type. The user has to allow Bluey in System Settings, Privacy & Security, Accessibility."
             case .unknownKey(let key):
                 return "I don't know the key \"\(key)\"."
             }
         }
     }
 
-    /// True once the user has allowed Googly Eyes under Accessibility.
+    /// True once the user has allowed Bluey under Accessibility.
     static var isTrusted: Bool { AXIsProcessTrusted() }
 
     /// Shows the system prompt that sends the user to the Accessibility settings.

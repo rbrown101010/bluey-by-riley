@@ -13,7 +13,7 @@ struct PairingView: View {
                 Text("Wake me up from your Mac")
                     .font(.fredoka(32))
                     .foregroundStyle(Color(hex: 0xF4F1FA))
-                Text("Open Googly Eyes in your Mac's menu bar. Keep both on the same Wi-Fi and I'll find it.")
+                Text("Open Bluey in your Mac's menu bar. Keep both on the same Wi-Fi and I'll find it.")
                     .font(.plexSans(16))
                     .foregroundStyle(Color(hex: Palette.inkSoft))
                     .frame(maxWidth: 380, alignment: .leading)

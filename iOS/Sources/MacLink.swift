@@ -9,7 +9,7 @@ import UIKit
 final class MacLink: ObservableObject {
     @Published private(set) var connected = false
     @Published private(set) var macName: String?
-    /// Every Mac running Googly Eyes on this Wi-Fi, by its Bonjour name.
+    /// Every Mac running Bluey on this Wi-Fi, by its Bonjour name.
     @Published private(set) var macs: [String] = []
     /// The Mac the phone is linked to (or trying to link to).
     @Published private(set) var currentMac: String?
