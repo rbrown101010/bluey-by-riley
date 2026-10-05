@@ -24,6 +24,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         overlay.start()
         showDemoBubbleIfAsked()
         checkPermissions()
+        if let path = ProcessInfo.processInfo.environment["GOOGLY_DEMO_TRANSCRIBE"], let audio = FileManager.default.contents(atPath: path) {
+            // Transcribes an audio file into a throwaway notes folder, prints the lines and quits.
+            Task {
+                do {
+                    let result = try await MeetingNotes.transcribe(audio: audio, session: "demo0000", index: 1, sessionStarted: Date())
+                    for s in result.segments { print("[\(s.start)] \(s.speaker): \(s.text)") }
+                    try? FileManager.default.removeItem(at: result.folder)
+                } catch { print("failed:", error) }
+                exit(0)
+            }
+        }
         if let question = ProcessInfo.processInfo.environment["GOOGLY_DEMO_RESEARCH"] {
             host.demoResearch(question, out: ProcessInfo.processInfo.environment["GOOGLY_DEMO_OUT"] ?? "/tmp/googly-report")
         }
@@ -132,6 +143,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let text = "accessibility=\(ComputerControl.isTrusted) screenRecording=\(CGPreflightScreenCaptureAccess()) computerControl=\(Settings.shared.computerControl)\n"
             try? text.write(to: status, atomically: true, encoding: .utf8)
         }.fire()
+    }
+
+    @objc private func openNotes() {
+        try? FileManager.default.createDirectory(at: MeetingNotes.root, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(MeetingNotes.root)
     }
 
     @objc private func stopActions() {
@@ -267,6 +283,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(submenu("Phone Sits Under", phoneMenu))
 
+        menu.addItem(item("Open Meeting Notes", #selector(openNotes)))
         menu.addItem(item("Personality…", #selector(editPersonality)))
         menu.addItem(item("OpenAI Key…", #selector(editKeys)))
         menu.addItem(.separator())

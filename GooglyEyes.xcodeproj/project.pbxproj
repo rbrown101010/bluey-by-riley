@@ -14,6 +14,7 @@
 		6C5FF10BDE711139D00DB85A /* Fredoka.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D0EEE8F996B2F95804C1ECF8 /* Fredoka.ttf */; };
 		6E03A7EBF9AAFFE4AC87ADE4 /* GooglyLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F71F206238433A6F710528B /* GooglyLink.swift */; };
 		6F0C91F5B7E911464464DB96 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A31DC33ABF7869BDE4E0F6C /* Palette.swift */; };
+		6F0FE87629E2A7A20676322C /* ChunkRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED2232FD362786D7A5D38B8 /* ChunkRecorder.swift */; };
 		6FBD9F2B49D3FD5A78CC4EF1 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83073BF3A1F734ADC97138DF /* SessionStore.swift */; };
 		772A196648CCCC476A2E36F7 /* OFL-Fredoka.txt in Resources */ = {isa = PBXBuildFile; fileRef = 020C853B32D37028CE040148 /* OFL-Fredoka.txt */; };
 		9C57F9AFA362287C2B93142E /* IBMPlexMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0EAD8A3C72D3899AD5CD2AA8 /* IBMPlexMono-Regular.ttf */; };
@@ -38,6 +39,7 @@
 		4F71F206238433A6F710528B /* GooglyLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooglyLink.swift; sourceTree = "<group>"; };
 		65620B4F67CBB8E8821EBAC8 /* SoundButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundButton.swift; sourceTree = "<group>"; };
 		7A762C0174AFF849BAD1A700 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
+		7ED2232FD362786D7A5D38B8 /* ChunkRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkRecorder.swift; sourceTree = "<group>"; };
 		83073BF3A1F734ADC97138DF /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		AA3AAA80221D679C8EAAE925 /* FaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceView.swift; sourceTree = "<group>"; };
 		AB333D12D3F4C506B3E49505 /* IBMPlexSans.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = IBMPlexSans.ttf; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 			children = (
 				35F3C44C342D6E869E6E3B4E /* BlobShape.swift */,
 				1510156B478E99D7C4446DCA /* BlueyAppView.swift */,
+				7ED2232FD362786D7A5D38B8 /* ChunkRecorder.swift */,
 				AA3AAA80221D679C8EAAE925 /* FaceView.swift */,
 				C95CBBB828E99EC09708E98E /* GooglyApp.swift */,
 				2CD953582717D49F21FCD734 /* LiveVoice.swift */,
@@ -183,6 +186,7 @@
 			files = (
 				162BD56C1F6191020071D2A2 /* BlobShape.swift in Sources */,
 				A3D88EE98BFEE3386A2C66DF /* BlueyAppView.swift in Sources */,
+				6F0FE87629E2A7A20676322C /* ChunkRecorder.swift in Sources */,
 				EADE24E60818A63E82366B42 /* FaceView.swift in Sources */,
 				CD8A48CB04D56A4BEF47D6AB /* GooglyApp.swift in Sources */,
 				6E03A7EBF9AAFFE4AC87ADE4 /* GooglyLink.swift in Sources */,

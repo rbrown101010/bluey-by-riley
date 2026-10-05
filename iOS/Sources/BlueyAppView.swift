@@ -231,6 +231,35 @@ struct SessionDetailView: View {
     @ObservedObject var store: SessionStore
     let id: UUID
     @Environment(\.dismiss) private var dismiss
+    @State private var copied = false
+
+    /// A prompt for an agent (like Claude Code on the Mac) that points it at this session's notes files.
+    private func copyPrompt(_ session: BlueySession) {
+        let root = "~/Documents/Bluey Notes"
+        let path = session.notesPath.map { p -> String in
+            // Show the Mac path with ~ for the home folder.
+            if let range = p.range(of: "/Documents/Bluey Notes") { return "~" + p[range.lowerBound...] }
+            return p
+        } ?? "\(root)/ (the folder starting \(session.started.formatted(.iso8601.year().month().day())))"
+        let prompt = """
+        I recorded a meeting with my Bluey app on \(session.started.formatted(date: .complete, time: .shortened)). \
+        The notes are on my Mac in \(path)
+
+        - notes.md: the full transcript with timestamps and speaker labels (A, B, … per five-minute chunk), plus \
+        my questions to Bluey, its replies and research reports. Start here.
+        - session.json: the same data, structured.
+        - audio/: the original recording in five-minute chunks.
+
+        All my sessions are in \(root)/, one folder per session (see README.md there). Read the notes, then help me \
+        with: 
+        """
+        #if canImport(UIKit)
+        UIPasteboard.general.string = prompt
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        #endif
+        copied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+    }
 
     private var session: BlueySession? { store.sessions.first { $0.id == id } }
 
@@ -249,13 +278,25 @@ struct SessionDetailView: View {
                         .font(.fredoka(20))
                         .foregroundStyle(.white)
                     if let session {
-                        Text("\(SessionRow.duration(session.duration)) · \(session.questionCount) asked · \(session.entries.count) lines")
+                        Text("\(SessionRow.duration(session.duration)) · \(session.questionCount) asked"
+                             + (session.transcribing > 0 ? " · transcribing \(session.transcribing) chunk\(session.transcribing == 1 ? "" : "s")…" : ""))
                             .font(.plexMono(11))
                             .foregroundStyle(Color(hex: Palette.inkSoft))
                     }
                 }
                 Spacer()
                 if let session {
+                    Button { copyPrompt(session) } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            Text(copied ? "Copied" : "Copy prompt for agent")
+                        }
+                        .font(.plexSans(13).weight(.semibold))
+                        .padding(.horizontal, 14)
+                        .frame(height: 40)
+                        .background(Color(hex: Palette.berry3), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
                     ShareLink(item: session.exportText) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 16, weight: .semibold))
@@ -271,7 +312,7 @@ struct SessionDetailView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10) {
-                        ForEach(session?.entries.filter { !$0.text.isEmpty } ?? []) { entry in
+                        ForEach(session?.displayEntries ?? []) { entry in
                             EntryView(entry: entry).id(entry.id)
                         }
                     }
@@ -290,11 +331,33 @@ struct SessionDetailView: View {
 }
 
 private struct EntryView: View {
+    static func speakerColor(_ speaker: String?) -> Color {
+        let colors: [UInt32] = [0x8FB3FF, 0x5BE49B, 0xFFB86B, 0xFF9AD0, 0xC79BFF, 0x6BE3E0]
+        guard let first = speaker?.unicodeScalars.first?.value, speaker != "?" else { return Color(hex: Palette.inkSoft) }
+        return Color(hex: colors[Int(first) % colors.count])
+    }
+
     let entry: TranscriptEntry
     @State private var open = false
 
     var body: some View {
         switch entry.kind {
+        case .transcript:
+            HStack(alignment: .top, spacing: 10) {
+                Text(entry.speaker.map { "Speaker \($0)" } ?? "Speaker")
+                    .font(.plexMono(11).weight(.medium))
+                    .foregroundStyle(Self.speakerColor(entry.speaker))
+                    .frame(width: 78, alignment: .leading)
+                    .padding(.top, 2)
+                Text(entry.text)
+                    .font(.plexSans(15))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(entry.time.formatted(date: .omitted, time: .shortened))
+                    .font(.plexMono(10))
+                    .foregroundStyle(Color(hex: Palette.inkSoft).opacity(0.7))
+                    .padding(.top, 3)
+            }
         case .heard:
             Text(entry.text)
                 .font(.plexSans(14))

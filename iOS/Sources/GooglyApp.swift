@@ -66,7 +66,11 @@ struct RootView: View {
             link.start()
         }
         .onChange(of: link.connected) { _, connected in
-            if connected { withAnimation(.easeOut(duration: 0.4)) { showPairing = false } }
+            if connected {
+                withAnimation(.easeOut(duration: 0.4)) { showPairing = false }
+                NotesSync.retryPending(store: store, link: link)
+                store.resyncRecent()
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { link.start() } else if phase == .background { link.stop() }
@@ -111,7 +115,16 @@ struct RootView: View {
                 done(reply?.text ?? "The Mac didn't answer.", reply?.image)
             }
         }
-        live.onSessionStart = { [store] in store.start() }
+        live.onSessionStart = { [store, live] in
+            store.start()
+            if let id = store.currentID { live.recorder.start(session: id) }
+        }
+        live.resumeContext = { [store] in store.recentText() }
+        live.recorder.onChunk = { [store, link] chunk in
+            store.addPending(chunk.sessionID, index: chunk.index, started: chunk.started)
+            NotesSync.upload(chunk.sessionID, index: chunk.index, started: chunk.started, store: store, link: link)
+        }
+        store.onSync = { [store, link] sessions in NotesSync.send(sessions, store: store, link: link) }
         live.onSessionEnd = { [store] in store.end() }
         live.onUserTurn = { [store] item, asked in store.placeholder(itemID: item, asked: asked) }
         live.onUserWords = { [store] item, text, asked in store.heard(itemID: item, text: text, asked: asked) }

@@ -40,6 +40,36 @@ final class RealtimeHost {
                     self.showCaption(error.localizedDescription, for: 6)
                 }
             }
+        case "transcribe":
+            // A recorded chunk from the phone: save it, transcribe it with speakers, send the lines back.
+            guard let meta = packet.text.flatMap({ try? JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any] }),
+                  let session = meta["session"] as? String, let index = meta["index"] as? Int,
+                  let sessionStarted = meta["sessionStarted"] as? Double,
+                  let audio = packet.audio.flatMap({ Data(base64Encoded: $0) }) else {
+                reply(Packet(command: "transcribed", callID: packet.callID, text: nil))
+                return
+            }
+            Task {
+                do {
+                    let result = try await MeetingNotes.transcribe(audio: audio, session: session, index: index,
+                                                                   sessionStarted: Date(timeIntervalSince1970: sessionStarted))
+                    let lines = result.segments.map { ["speaker": $0.speaker, "start": $0.start, "text": $0.text] as [String: Any] }
+                    let body: [String: Any] = ["segments": lines, "notesPath": result.folder.path]
+                    let text = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) }
+                    reply(Packet(command: "transcribed", callID: packet.callID, text: text))
+                } catch {
+                    NSLog("Googly: transcription failed: \(error)")
+                    reply(Packet(command: "transcribed", callID: packet.callID, text: nil))
+                }
+            }
+        case "notes":
+            // The phone's copy of a session: write it out as meeting-notes files.
+            guard let json = packet.text.flatMap({ try? JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any] }),
+                  let folder = MeetingNotes.write(session: json) else {
+                reply(Packet(command: "notes", callID: packet.callID, text: nil))
+                return
+            }
+            reply(Packet(command: "notes", callID: packet.callID, text: folder.path))
         case "awake":
             setAwake(true)
         case "asleep":
