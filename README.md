@@ -44,3 +44,7 @@ On the phone: double tap him to wake him up or put him back to sleep, and press 
 - `Shared/` pairing protocol (Bonjour `_googly._tcp`, newline JSON) and colors, used by both apps
 - `Mac/` menu bar app (Swift package target `GooglyMac`)
 - `iOS/` iPhone app (SwiftUI)
+
+## License
+
+Public domain under [the Unlicense](LICENSE). Do whatever you want with it.
