@@ -337,10 +337,13 @@ final class CursorEngine {
         return CGPoint(x: tip.x + cos(angle + .pi / 4) * r, y: tip.y + sin(angle + .pi / 4) * r)
     }
 
+    /// What he looks at: his own cursor, or your mouse in follow mode (view coordinates, y down).
+    var lookPoint: CGPoint { mode == .following ? mouse : bodyCenter }
+
     /// What the phone's face should do: look at the cursor (or at your mouse in follow mode).
     func face(in bounds: CGSize, now: Double) -> FaceState {
         let phone = phonePoint(in: bounds)
-        let c = mode == .following ? mouse : bodyCenter
+        let c = lookPoint
         var gx = max(-1, min(1, (c.x - phone.x) / (bounds.width * 0.5)))
         var gy = -max(0.15, min(1, (phone.y - c.y) / (bounds.height * 1.1)))
         if let g = gazeOverride { gx = g.x; gy = g.y }
@@ -1032,6 +1035,8 @@ final class CursorOverlay: NSObject {
 
     /// Called every frame with the face the phone should show.
     var onFace: ((FaceState) -> Void)?
+    /// Where he's looking, in global screen coordinates (y up), every frame.
+    var onLook: ((CGPoint) -> Void)?
 
     var mode: CursorMode {
         get { view.engine.mode }
@@ -1087,5 +1092,7 @@ final class CursorOverlay: NSObject {
         let f = window.frame
         view.step(dt: dt, now: now, mouse: CGPoint(x: m.x - f.minX, y: f.maxY - m.y))
         onFace?(view.engine.face(in: view.bounds.size, now: now))
+        let look = view.engine.lookPoint
+        onLook?(CGPoint(x: f.minX + look.x, y: f.maxY - look.y))
     }
 }

@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.server.send(face)
             self?.avatarWindow.update(face)
         }
+        overlay.onLook = { [weak self] point in self?.avatarWindow.look(at: point) }
         if settings.showAvatarWindow { avatarWindow.show() }
         overlay.start()
         showDemoBubbleIfAsked()

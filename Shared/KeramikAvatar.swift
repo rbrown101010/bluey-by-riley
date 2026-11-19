@@ -48,12 +48,15 @@ public struct KeramikReaction: Equatable, Sendable {
 /// transparent web view. Purely visual: it ignores touches, so gestures on the face keep working.
 public struct KeramikAvatarView {
     public var mood: String
+    /// Where the eyes look, -1…1 (y down), like Bluey's gaze. Nil lets them wander on their own.
+    public var gaze: CGPoint?
     public var reaction: KeramikReaction?
     /// How long a reaction stays before he goes back to `mood`.
     public var reactionSeconds: Double
 
-    public init(mood: String, reaction: KeramikReaction? = nil, reactionSeconds: Double = 4) {
+    public init(mood: String, gaze: CGPoint? = nil, reaction: KeramikReaction? = nil, reactionSeconds: Double = 4) {
         self.mood = mood
+        self.gaze = gaze
         self.reaction = reaction
         self.reactionSeconds = reactionSeconds
     }
@@ -61,6 +64,7 @@ public struct KeramikAvatarView {
     public final class Coordinator: NSObject, WKNavigationDelegate {
         var ready = false
         var shownMood: String?
+        var shownGaze: CGPoint?
         var playedReaction: Int?
         var pending: KeramikAvatarView?
         var reactionUntil = Date.distantPast
@@ -80,6 +84,11 @@ public struct KeramikAvatarView {
         func apply(_ view: KeramikAvatarView) {
             pending = view
             guard ready, let web else { return }
+            if Self.moved(view.gaze, from: shownGaze) {
+                shownGaze = view.gaze
+                let look = view.gaze.map { String(format: "%.3f, %.3f", $0.x, $0.y) } ?? "null"
+                web.evaluateJavaScript("window.ka && ka.look(\(look))")
+            }
             if let reaction = view.reaction, reaction.id != playedReaction {
                 playedReaction = reaction.id
                 reactionUntil = Date().addingTimeInterval(view.reactionSeconds)
@@ -96,6 +105,11 @@ public struct KeramikAvatarView {
             guard Date() >= reactionUntil, view.mood != shownMood else { return }
             shownMood = view.mood
             web.evaluateJavaScript("window.ka && ka.setMood(\(Self.js(view.mood)))")
+        }
+
+        static func moved(_ a: CGPoint?, from b: CGPoint?) -> Bool {
+            guard let a, let b else { return (a == nil) != (b == nil) }
+            return abs(a.x - b.x) > 0.01 || abs(a.y - b.y) > 0.01
         }
 
         static func js(_ text: String) -> String {
@@ -136,7 +150,8 @@ public struct KeramikAvatarView {
         guard let url = Bundle.main.url(forResource: "keramik-avatar", withExtension: "js"),
               let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
         let lines = text.components(separatedBy: "\n").filter { !$0.hasPrefix("export ") }
-        return lines.joined(separator: "\n") + "\nwindow.ka = document.getElementById('bot');\n"
+        return lines.joined(separator: "\n")
+            + "\nwindow.ka = document.getElementById('bot');\n"
     }()
 
     static let page = """
@@ -145,9 +160,9 @@ public struct KeramikAvatarView {
     <style>
       html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
       body { display: flex; align-items: center; justify-content: center; }
-      keramik-avatar { --ka-size: min(96vw, calc(96vh * 280 / 260)); }
+      keramik-avatar { --ka-size: min(140vw, calc(140vh * 280 / 260)); flex-shrink: 0; }
     </style></head>
-    <body><keramik-avatar id="bot" boot></keramik-avatar></body></html>
+    <body><keramik-avatar id="bot" shape="kapsel" boot></keramik-avatar></body></html>
     """
 }
 

@@ -8,6 +8,7 @@ import GooglyShared
 final class AvatarWindow {
     private final class Model: ObservableObject {
         @Published var mood = "neutral"
+        @Published var gaze = CGPoint.zero
         @Published var reaction: KeramikReaction?
     }
 
@@ -19,7 +20,7 @@ final class AvatarWindow {
 
     private struct Content: View {
         @ObservedObject var model: Model
-        var body: some View { KeramikAvatarView(mood: model.mood, reaction: model.reaction) }
+        var body: some View { KeramikAvatarView(mood: model.mood, gaze: model.gaze, reaction: model.reaction) }
     }
 
     private let model = Model()
@@ -39,12 +40,22 @@ final class AvatarWindow {
         if model.mood != mood { model.mood = mood }
     }
 
+    /// Turns his eyes toward a point on screen (global coordinates), seen from where this window sits.
+    func look(at point: CGPoint) {
+        guard let panel, panel.isVisible else { return }
+        let center = CGPoint(x: panel.frame.midX, y: panel.frame.midY)
+        let screen = (panel.screen ?? NSScreen.main)?.frame.size ?? CGSize(width: 1440, height: 900)
+        let gaze = CGPoint(x: max(-1, min(1, (point.x - center.x) / (screen.width * 0.35))),
+                           y: max(-1, min(1, (center.y - point.y) / (screen.height * 0.35))))
+        if abs(gaze.x - model.gaze.x) > 0.02 || abs(gaze.y - model.gaze.y) > 0.02 { model.gaze = gaze }
+    }
+
     func react(_ name: String) {
         model.reaction = KeramikReaction(name, id: (model.reaction?.id ?? 0) + 1)
     }
 
     private func makePanel() -> NSPanel {
-        let size = NSSize(width: 220, height: 205)
+        let size = NSSize(width: 340, height: 316)
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let panel = NSPanel(contentRect: NSRect(x: screen.maxX - size.width - 24, y: screen.minY + 24,
                                                 width: size.width, height: size.height),

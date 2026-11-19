@@ -1123,9 +1123,17 @@ class Component extends DCLogic {
     var tn = st.now || 0;
     var eyesOpen = !md.L.s && !md.R.s && !booting;
     var lookX = 0, lookY = 0, bodyTy = Math.sin(tn * 1.9) * 0.9, bodyS = 1 + Math.sin(tn * 1.9) * 0.006, bodyR = 0;
-    if (eyesOpen && !actId && !reactId && (cur === 'neutral' || cur === 'focus')) { lookX = 2.2 * Math.sin(tn * 0.55) * Math.sin(tn * 0.23 + 1); }
-    if (md.L.dx || md.L.dy < 0) { lookX += 1.6 * Math.sin(tn * 1.4); lookY += 0.8 * Math.sin(tn * 2.1); }
-    if (actId) { lookX += 2.5 * Math.sin(tn * 2.6); }
+    var gz = self.gaze;
+    if (gz && !actId) {
+      // Bluey: the eyes follow a point (the cursor), -1…1 in both directions.
+      var gs = self._gs || (self._gs = { x: gz.x, y: gz.y });
+      gs.x += (gz.x - gs.x) * 0.2; gs.y += (gz.y - gs.y) * 0.2;  // eased, so updates a few times a second still glide
+      lookX = 14 * gs.x; lookY = 9 * gs.y;
+    } else {
+      if (eyesOpen && !actId && !reactId && (cur === 'neutral' || cur === 'focus')) { lookX = 2.2 * Math.sin(tn * 0.55) * Math.sin(tn * 0.23 + 1); }
+      if (md.L.dx || md.L.dy < 0) { lookX += 1.6 * Math.sin(tn * 1.4); lookY += 0.8 * Math.sin(tn * 2.1); }
+      if (actId) { lookX += 2.5 * Math.sin(tn * 2.6); }
+    }
     if (md.m === 'big') bodyTy -= Math.abs(Math.sin(tn * 5)) * 1.6;
     if (cur === 'sleep' && !actId && !reactId) { bodyTy = Math.sin(tn * 1.1) * 2.2; bodyS = 1 + Math.sin(tn * 1.1) * 0.015; }
     if ((cur === 'oops' || cur === 'meh') && !actId && !reactId) bodyR = Math.sin(tn * 3) * 1.2;
@@ -1314,6 +1322,12 @@ class KeramikAvatar extends HTMLElement {
     c.setState({ act: id || null, react: null });
     c.sequence(null, this._add().ant);
     c.glasses(!!id, id && busy ? 600 : 0);
+    return this;
+  }
+  /** Blickrichtung (Bluey): x, y je -1…1; null = Augen wandern wieder selbst */
+  look(x, y) {
+    const c = this._c; if (!c) return this;
+    c.gaze = x == null ? null : { x: Math.max(-1, Math.min(1, +x || 0)), y: Math.max(-1, Math.min(1, +y || 0)) };
     return this;
   }
   /** Körperform: squircle, kapsel, kiesel, helm, monitor */

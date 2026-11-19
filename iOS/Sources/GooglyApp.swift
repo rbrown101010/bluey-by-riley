@@ -210,9 +210,9 @@ struct KeramikFace: View {
     var reaction: KeramikReaction?
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 0.2)) { timeline in
+        TimelineView(.periodic(from: .now, by: 0.1)) { timeline in
             let frame = animator.step(timeline.date.timeIntervalSinceReferenceDate)
-            KeramikAvatarView(mood: KeramikMapping.mood(frame.mood), reaction: reaction)
+            KeramikAvatarView(mood: KeramikMapping.mood(frame.mood), gaze: frame.gaze, reaction: reaction)
         }
         .background(Color.black)
         .ignoresSafeArea()
