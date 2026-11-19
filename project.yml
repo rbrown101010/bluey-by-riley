@@ -17,6 +17,10 @@ targets:
       - path: Shared
       - path: vendor/keramik-avatar/keramik-avatar.js
         buildPhase: resources
+      - path: vendor/keramik-3d/three.min.js
+        buildPhase: resources
+      - path: vendor/keramik-3d/keramik-3d.js
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.visionairy.googly.phone

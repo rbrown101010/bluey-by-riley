@@ -20,7 +20,7 @@ final class AvatarWindow {
 
     private struct Content: View {
         @ObservedObject var model: Model
-        var body: some View { KeramikAvatarView(mood: model.mood, gaze: model.gaze, reaction: model.reaction) }
+        var body: some View { KeramikAvatarView(mood: model.mood, gaze: model.gaze, reaction: model.reaction, zoom: 0.84, model3D: true) }
     }
 
     private let model = Model()

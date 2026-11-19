@@ -25,7 +25,7 @@ struct RootView: View {
     @State private var showPairing = true
     @State private var holdStart: DispatchWorkItem?
     @State private var holdingToAsk = false
-    @AppStorage(AvatarStyle.defaultsKey) private var avatar: AvatarStyle = .keramik
+    @AppStorage(AvatarStyle.defaultsKey) private var avatar: AvatarStyle = .keramik3D
     @State private var avatarReaction: KeramikReaction?
 
     var body: some View {
@@ -34,6 +34,7 @@ struct RootView: View {
                 switch avatar {
                 case .bluey: FaceView(animator: animator)
                 case .keramik: KeramikFace(animator: animator, reaction: avatarReaction)
+                case .keramik3D: KeramikFace(animator: animator, reaction: avatarReaction, model3D: true)
                 }
             }
             .allowsHitTesting(false)
@@ -208,11 +209,13 @@ struct RootView: View {
 struct KeramikFace: View {
     let animator: FaceAnimator
     var reaction: KeramikReaction?
+    var model3D = false
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.1)) { timeline in
             let frame = animator.step(timeline.date.timeIntervalSinceReferenceDate)
-            KeramikAvatarView(mood: KeramikMapping.mood(frame.mood), gaze: frame.gaze, reaction: reaction, zoom: 1.4)
+            KeramikAvatarView(mood: KeramikMapping.mood(frame.mood), gaze: frame.gaze, reaction: reaction,
+                              zoom: model3D ? 1.0 : 1.4, model3D: model3D)
         }
         .background(Color.black)
         .ignoresSafeArea()

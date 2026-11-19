@@ -2,19 +2,20 @@ import Foundation
 
 /// Which character the phone shows (and the Mac's optional avatar window uses).
 public enum AvatarStyle: String, CaseIterable, Sendable {
-    case bluey, keramik
+    case bluey, keramik, keramik3D
 
     public var title: String {
         switch self {
         case .bluey: return "Bluey"
         case .keramik: return "Keramik"
+        case .keramik3D: return "Keramik 3D"
         }
     }
 
     public static let defaultsKey = "avatarStyle"
 
     public static var saved: AvatarStyle {
-        get { AvatarStyle(rawValue: UserDefaults.standard.string(forKey: defaultsKey) ?? "") ?? .keramik }
+        get { AvatarStyle(rawValue: UserDefaults.standard.string(forKey: defaultsKey) ?? "") ?? .keramik3D }
         set { UserDefaults.standard.set(newValue.rawValue, forKey: defaultsKey) }
     }
 }
@@ -44,8 +45,9 @@ public struct KeramikReaction: Equatable, Sendable {
     public init(_ name: String, id: Int) { self.name = name; self.id = id }
 }
 
-/// The user's own Keramik avatar (`vendor/keramik-avatar`), rendered by its web component in a
-/// transparent web view. Purely visual: it ignores touches, so gestures on the face keep working.
+/// The user's own Keramik avatar in a transparent web view: either the original 2D web component
+/// (`vendor/keramik-avatar`) or the 3D head (`vendor/keramik-3d`, three.js). Both take the same calls.
+/// Purely visual: it ignores touches, so gestures on the face keep working.
 public struct KeramikAvatarView {
     public var mood: String
     /// Where the eyes look, -1…1 (y down), like Bluey's gaze. Nil lets them wander on their own.
@@ -55,9 +57,13 @@ public struct KeramikAvatarView {
     public var reactionSeconds: Double
     /// Size relative to the view's shorter fit; above 1 crops the empty margin around him.
     public var zoom: Double
+    /// True for the 3D head. Fixed once the view exists.
+    public var model3D: Bool
 
-    public init(mood: String, gaze: CGPoint? = nil, reaction: KeramikReaction? = nil, reactionSeconds: Double = 4, zoom: Double = 0.96) {
+    public init(mood: String, gaze: CGPoint? = nil, reaction: KeramikReaction? = nil, reactionSeconds: Double = 4,
+                zoom: Double = 0.96, model3D: Bool = false) {
         self.zoom = zoom
+        self.model3D = model3D
         self.mood = mood
         self.gaze = gaze
         self.reaction = reaction
@@ -127,7 +133,7 @@ public struct KeramikAvatarView {
     func makeWebView(_ coordinator: Coordinator) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.suppressesIncrementalRendering = true
-        if let script = Self.componentSource {
+        for script in model3D ? Self.modelSources : [Self.componentSource].compactMap({ $0 }) {
             config.userContentController.addUserScript(
                 WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         }
@@ -144,7 +150,7 @@ public struct KeramikAvatarView {
         #endif
         coordinator.web = web
         coordinator.pending = self
-        web.loadHTMLString(Self.page(zoom: zoom), baseURL: nil)
+        web.loadHTMLString(model3D ? Self.modelPage(fill: zoom) : Self.page(zoom: zoom), baseURL: nil)
         return web
     }
 
@@ -156,6 +162,26 @@ public struct KeramikAvatarView {
         return lines.joined(separator: "\n")
             + "\nwindow.ka = document.getElementById('bot');\n"
     }()
+
+    /// three.js, then the 3D head (which sets `window.ka`).
+    static let modelSources: [String] = ["three.min", "keramik-3d"].compactMap { name in
+        guard let url = Bundle.main.url(forResource: name, withExtension: "js") else { return nil }
+        return try? String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// `fill`: how much of the view the head takes up (0…1).
+    static func modelPage(fill: Double) -> String {
+        """
+        <!doctype html><html><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        <style>
+          html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+          #ka3d { position: absolute; inset: 0; }
+        </style>
+        <script>window.KA_FILL = \(String(format: "%.2f", fill));</script></head>
+        <body><div id="ka3d"></div></body></html>
+        """
+    }
 
     static func page(zoom: Double) -> String {
         let z = String(format: "%.1f", zoom * 100)

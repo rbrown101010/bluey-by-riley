@@ -28,6 +28,8 @@
 		C54C1E0F76ECB8F94A9AEE70 /* FocusSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB5A3FC752388C5F4235248 /* FocusSession.swift */; };
 		C763037B3F88C28F89EB61F0 /* MacLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B44C98F6A89143BA9C926480 /* MacLink.swift */; };
 		CD8A48CB04D56A4BEF47D6AB /* GooglyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95CBBB828E99EC09708E98E /* GooglyApp.swift */; };
+		E6C82A0AF17C630C38D3817D /* keramik-3d.js in Resources */ = {isa = PBXBuildFile; fileRef = 79D7C3C12936DB167CA356AC /* keramik-3d.js */; };
+		E8AF573E8BBA9219C4F616F6 /* three.min.js in Resources */ = {isa = PBXBuildFile; fileRef = 693FD492D9A77112303F60A1 /* three.min.js */; };
 		EADE24E60818A63E82366B42 /* FaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3AAA80221D679C8EAAE925 /* FaceView.swift */; };
 		F171BD7BAF58935750650B4D /* FocusClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5028F9B110929B5CAC427465 /* FocusClient.swift */; };
 		F5C101DF403B8B41F401C234 /* SecurePairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C5BC31DC1FF4C0765EA0688 /* SecurePairing.swift */; };
@@ -48,7 +50,9 @@
 		4F71F206238433A6F710528B /* GooglyLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooglyLink.swift; sourceTree = "<group>"; };
 		5028F9B110929B5CAC427465 /* FocusClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusClient.swift; sourceTree = "<group>"; };
 		65620B4F67CBB8E8821EBAC8 /* SoundButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundButton.swift; sourceTree = "<group>"; };
+		693FD492D9A77112303F60A1 /* three.min.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = three.min.js; sourceTree = "<group>"; };
 		6C5BC31DC1FF4C0765EA0688 /* SecurePairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurePairing.swift; sourceTree = "<group>"; };
+		79D7C3C12936DB167CA356AC /* keramik-3d.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "keramik-3d.js"; sourceTree = "<group>"; };
 		7A762C0174AFF849BAD1A700 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
 		7ED2232FD362786D7A5D38B8 /* ChunkRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkRecorder.swift; sourceTree = "<group>"; };
 		83073BF3A1F734ADC97138DF /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
@@ -82,6 +86,7 @@
 		4F61868F579B512B69F537A4 = {
 			isa = PBXGroup;
 			children = (
+				79064102162C418379FDBD8A /* keramik-3d */,
 				D55599E737C6FDE5455A5718 /* keramik-avatar */,
 				E8E2F33C9E110392983FDDDF /* Shared */,
 				8F41397BC1AEAB53CDE84BB3 /* Sources */,
@@ -95,6 +100,16 @@
 				E884B5117C895A0439FDFE12 /* GooglyEyes.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		79064102162C418379FDBD8A /* keramik-3d */ = {
+			isa = PBXGroup;
+			children = (
+				79D7C3C12936DB167CA356AC /* keramik-3d.js */,
+				693FD492D9A77112303F60A1 /* three.min.js */,
+			);
+			name = "keramik-3d";
+			path = "vendor/keramik-3d";
 			sourceTree = "<group>";
 		};
 		8F41397BC1AEAB53CDE84BB3 /* Sources */ = {
@@ -207,7 +222,9 @@
 				FC47A19572BFD9F2386A85D3 /* IBMPlexSans.ttf in Resources */,
 				772A196648CCCC476A2E36F7 /* OFL-Fredoka.txt in Resources */,
 				0E02B38E4A5A909A93BA31C5 /* OFL-IBMPlex.txt in Resources */,
+				E6C82A0AF17C630C38D3817D /* keramik-3d.js in Resources */,
 				63254595DAF92EDD1EEF4391 /* keramik-avatar.js in Resources */,
+				E8AF573E8BBA9219C4F616F6 /* three.min.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

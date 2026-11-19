@@ -11,7 +11,7 @@ struct BlueyAppView: View {
     var pairMac: () -> Void
     var onClose: () -> Void
     @State private var volume = 1.0
-    @AppStorage(AvatarStyle.defaultsKey) private var avatar: AvatarStyle = .keramik
+    @AppStorage(AvatarStyle.defaultsKey) private var avatar: AvatarStyle = .keramik3D
 
     var body: some View {
         NavigationStack {
