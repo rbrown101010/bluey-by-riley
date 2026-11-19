@@ -15,6 +15,8 @@ targets:
     sources:
       - path: iOS/Sources
       - path: Shared
+      - path: vendor/keramik-avatar/keramik-avatar.js
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: co.visionairy.googly.phone

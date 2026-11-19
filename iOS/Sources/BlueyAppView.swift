@@ -11,6 +11,7 @@ struct BlueyAppView: View {
     var pairMac: () -> Void
     var onClose: () -> Void
     @State private var volume = 1.0
+    @AppStorage(AvatarStyle.defaultsKey) private var avatar: AvatarStyle = .keramik
 
     var body: some View {
         NavigationStack {
@@ -93,6 +94,14 @@ struct BlueyAppView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     label("Chirp volume")
                     Slider(value: Binding(get: { volume }, set: { volume = $0; live.volume = $0 }), in: 0...1)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    label("Avatar")
+                    Picker("Avatar", selection: $avatar) {
+                        ForEach(AvatarStyle.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
                 }
 
                 if link.macs.count > 1 {

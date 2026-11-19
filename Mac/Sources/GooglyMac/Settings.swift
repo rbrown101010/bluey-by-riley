@@ -48,6 +48,12 @@ final class Settings {
         set { defaults.set(newValue.rawValue, forKey: "trail"); onChange?() }
     }
 
+    /// Shows the user's Keramik avatar in a small floating window.
+    var showAvatarWindow: Bool {
+        get { defaults.object(forKey: "showAvatarWindow") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "showAvatarWindow"); onChange?() }
+    }
+
     /// The mood picked by hand in the menu.
     var mood: Mood {
         get { Mood(rawValue: defaults.string(forKey: "mood") ?? "") ?? .listening }

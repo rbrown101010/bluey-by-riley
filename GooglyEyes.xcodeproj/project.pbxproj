@@ -11,6 +11,7 @@
 		0F5614BE9A55A8498E40F5F1 /* IBMPlexMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1C8AB3F441CA03CDA07FAE72 /* IBMPlexMono-Medium.ttf */; };
 		162BD56C1F6191020071D2A2 /* BlobShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35F3C44C342D6E869E6E3B4E /* BlobShape.swift */; };
 		229BAA56B4ED395457C442E0 /* QRPairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E88A21B39D4CF71F73A5737 /* QRPairingView.swift */; };
+		63254595DAF92EDD1EEF4391 /* keramik-avatar.js in Resources */ = {isa = PBXBuildFile; fileRef = 1F05D570EC65415B1C06723D /* keramik-avatar.js */; };
 		68F797C6A1D3EC7A83674C2A /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A762C0174AFF849BAD1A700 /* PairingView.swift */; };
 		6C5FF10BDE711139D00DB85A /* Fredoka.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D0EEE8F996B2F95804C1ECF8 /* Fredoka.ttf */; };
 		6E03A7EBF9AAFFE4AC87ADE4 /* GooglyLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F71F206238433A6F710528B /* GooglyLink.swift */; };
@@ -21,6 +22,7 @@
 		89CA80F59236155E52CDA9D9 /* VoiceTurnBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9523CAD3450502FE203C1BBD /* VoiceTurnBuffer.swift */; };
 		9C57F9AFA362287C2B93142E /* IBMPlexMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0EAD8A3C72D3899AD5CD2AA8 /* IBMPlexMono-Regular.ttf */; };
 		A3D88EE98BFEE3386A2C66DF /* BlueyAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1510156B478E99D7C4446DCA /* BlueyAppView.swift */; };
+		AF36CBC0F9F65043C0E3FBB5 /* KeramikAvatar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DAB077A345B8E38071C921 /* KeramikAvatar.swift */; };
 		B7F0853D97ECC4C28D0F6986 /* FocusViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABAEED7339E96003AE49BEC7 /* FocusViews.swift */; };
 		C2D2BC58460F12FB0D562BB7 /* LiveVoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CD953582717D49F21FCD734 /* LiveVoice.swift */; };
 		C54C1E0F76ECB8F94A9AEE70 /* FocusSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB5A3FC752388C5F4235248 /* FocusSession.swift */; };
@@ -39,6 +41,7 @@
 		1249C703A2D40793CA70D00E /* OFL-IBMPlex.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-IBMPlex.txt"; sourceTree = "<group>"; };
 		1510156B478E99D7C4446DCA /* BlueyAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueyAppView.swift; sourceTree = "<group>"; };
 		1C8AB3F441CA03CDA07FAE72 /* IBMPlexMono-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexMono-Medium.ttf"; sourceTree = "<group>"; };
+		1F05D570EC65415B1C06723D /* keramik-avatar.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "keramik-avatar.js"; sourceTree = "<group>"; };
 		2CD953582717D49F21FCD734 /* LiveVoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveVoice.swift; sourceTree = "<group>"; };
 		35F3C44C342D6E869E6E3B4E /* BlobShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlobShape.swift; sourceTree = "<group>"; };
 		4A31DC33ABF7869BDE4E0F6C /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
@@ -51,6 +54,7 @@
 		83073BF3A1F734ADC97138DF /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		8E88A21B39D4CF71F73A5737 /* QRPairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRPairingView.swift; sourceTree = "<group>"; };
 		9523CAD3450502FE203C1BBD /* VoiceTurnBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTurnBuffer.swift; sourceTree = "<group>"; };
+		A0DAB077A345B8E38071C921 /* KeramikAvatar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeramikAvatar.swift; sourceTree = "<group>"; };
 		AA3AAA80221D679C8EAAE925 /* FaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceView.swift; sourceTree = "<group>"; };
 		AB333D12D3F4C506B3E49505 /* IBMPlexSans.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = IBMPlexSans.ttf; sourceTree = "<group>"; };
 		ABAEED7339E96003AE49BEC7 /* FocusViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusViews.swift; sourceTree = "<group>"; };
@@ -78,6 +82,7 @@
 		4F61868F579B512B69F537A4 = {
 			isa = PBXGroup;
 			children = (
+				D55599E737C6FDE5455A5718 /* keramik-avatar */,
 				E8E2F33C9E110392983FDDDF /* Shared */,
 				8F41397BC1AEAB53CDE84BB3 /* Sources */,
 				554494C1002555E490E37EB6 /* Products */,
@@ -113,11 +118,21 @@
 			path = iOS/Sources;
 			sourceTree = "<group>";
 		};
+		D55599E737C6FDE5455A5718 /* keramik-avatar */ = {
+			isa = PBXGroup;
+			children = (
+				1F05D570EC65415B1C06723D /* keramik-avatar.js */,
+			);
+			name = "keramik-avatar";
+			path = "vendor/keramik-avatar";
+			sourceTree = "<group>";
+		};
 		E8E2F33C9E110392983FDDDF /* Shared */ = {
 			isa = PBXGroup;
 			children = (
 				FFB5A3FC752388C5F4235248 /* FocusSession.swift */,
 				4F71F206238433A6F710528B /* GooglyLink.swift */,
+				A0DAB077A345B8E38071C921 /* KeramikAvatar.swift */,
 				4A31DC33ABF7869BDE4E0F6C /* Palette.swift */,
 				6C5BC31DC1FF4C0765EA0688 /* SecurePairing.swift */,
 				9523CAD3450502FE203C1BBD /* VoiceTurnBuffer.swift */,
@@ -154,7 +169,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					B9CA7ABB7F3F613763C3DF65 = {
 						DevelopmentTeam = NF73NSV867;
@@ -163,7 +178,6 @@
 				};
 			};
 			buildConfigurationList = FF71141EA9D22D07B4D3C0E4 /* Build configuration list for PBXProject "GooglyEyes" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -173,6 +187,7 @@
 			mainGroup = 4F61868F579B512B69F537A4;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
+			productRefGroup = 554494C1002555E490E37EB6 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -192,6 +207,7 @@
 				FC47A19572BFD9F2386A85D3 /* IBMPlexSans.ttf in Resources */,
 				772A196648CCCC476A2E36F7 /* OFL-Fredoka.txt in Resources */,
 				0E02B38E4A5A909A93BA31C5 /* OFL-IBMPlex.txt in Resources */,
+				63254595DAF92EDD1EEF4391 /* keramik-avatar.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +227,7 @@
 				B7F0853D97ECC4C28D0F6986 /* FocusViews.swift in Sources */,
 				CD8A48CB04D56A4BEF47D6AB /* GooglyApp.swift in Sources */,
 				6E03A7EBF9AAFFE4AC87ADE4 /* GooglyLink.swift in Sources */,
+				AF36CBC0F9F65043C0E3FBB5 /* KeramikAvatar.swift in Sources */,
 				C2D2BC58460F12FB0D562BB7 /* LiveVoice.swift in Sources */,
 				C763037B3F88C28F89EB61F0 /* MacLink.swift in Sources */,
 				68F797C6A1D3EC7A83674C2A /* PairingView.swift in Sources */,

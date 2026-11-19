@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let codex = CodexController()
     private let focus = FocusCompanion()
     private let pairingPanel = PairingPanel()
+    private let avatarWindow = AvatarWindow()
     private lazy var host = RealtimeHost(overlay: overlay, codex: codex)
 
 
@@ -23,7 +24,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.delegate = self
         statusItem.menu = menu
 
-        overlay.onFace = { [weak self] face in self?.server.send(face) }
+        overlay.onFace = { [weak self] face in
+            self?.server.send(face)
+            self?.avatarWindow.update(face)
+        }
+        if settings.showAvatarWindow { avatarWindow.show() }
         overlay.start()
         showDemoBubbleIfAsked()
         checkPermissions()
@@ -50,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             guard let self else { return }
             self.host.focusNudge(message, target: target)
             self.server.broadcast(Packet(command: "focusChirp", text: message))
+            self.avatarWindow.react("stop")
         }
         focus.startService()
         if CommandLine.arguments.contains("--pair") {
@@ -203,6 +209,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
     @objc private func toggleShow() { settings.showCursor.toggle() }
+    @objc private func toggleAvatarWindow() {
+        settings.showAvatarWindow.toggle()
+        if settings.showAvatarWindow { avatarWindow.show() } else { avatarWindow.hide() }
+    }
     @objc private func pairPhone() { pairingPanel.show() }
     @objc private func pauseFocus() { focus.pause() }
     @objc private func resumeFocus() { _ = focus.resume() }
@@ -411,6 +421,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let show = item("Show Cursor", #selector(toggleShow), key: "h")
         show.state = settings.showCursor ? .on : .off
         menu.addItem(show)
+        let avatar = NSMenuItem(title: "Show Keramik Avatar", action: #selector(toggleAvatarWindow), keyEquivalent: "")
+        avatar.target = self
+        avatar.state = settings.showAvatarWindow ? .on : .off
+        menu.addItem(avatar)
 
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit Bluey", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))

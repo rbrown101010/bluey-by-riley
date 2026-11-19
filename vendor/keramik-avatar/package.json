@@ -1,0 +1,18 @@
+{
+  "name": "keramik-avatar",
+  "version": "1.0.0",
+  "description": "Animierter KI-Assistent als Web Component (Mimiken, Reaktionen, HUD, Boot/Shutdown). Keine Abhängigkeiten.",
+  "type": "module",
+  "main": "./keramik-avatar.js",
+  "module": "./keramik-avatar.js",
+  "types": "./keramik-avatar.d.ts",
+  "exports": {
+    ".": { "types": "./keramik-avatar.d.ts", "default": "./keramik-avatar.js" },
+    "./react": { "types": "./react/index.d.ts", "default": "./react/index.js" }
+  },
+  "files": ["keramik-avatar.js", "keramik-avatar.d.ts", "react", "README.md"],
+  "sideEffects": ["./keramik-avatar.js"],
+  "peerDependencies": { "react": ">=17" },
+  "peerDependenciesMeta": { "react": { "optional": true } },
+  "license": "UNLICENSED"
+}

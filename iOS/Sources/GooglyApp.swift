@@ -25,10 +25,19 @@ struct RootView: View {
     @State private var showPairing = true
     @State private var holdStart: DispatchWorkItem?
     @State private var holdingToAsk = false
+    @AppStorage(AvatarStyle.defaultsKey) private var avatar: AvatarStyle = .keramik
+    @State private var avatarReaction: KeramikReaction?
 
     var body: some View {
         ZStack {
-            FaceView(animator: animator)
+            Group {
+                switch avatar {
+                case .bluey: FaceView(animator: animator)
+                case .keramik: KeramikFace(animator: animator, reaction: avatarReaction)
+                }
+            }
+            .allowsHitTesting(false)
+            Color.clear
                 .contentShape(Rectangle())
                 .onTapGesture(count: 2) { live.toggle() }  // double tap: wake up / back to follow mode
                 .simultaneousGesture(holdToAsk)
@@ -67,7 +76,7 @@ struct RootView: View {
         .sheet(isPresented: $scanPairing) { QRPairingView(link: link) }
         .onAppear {
             focus.attach(link)
-            focus.onFinished = { showFocus = true; live.sleep() }
+            focus.onFinished = { showFocus = true; live.sleep(); react("confetti") }
             link.onFocusState = { [focus] in focus.receive($0) }
             link.onFace = { [animator] face in animator.receive(face, at: Date().timeIntervalSinceReferenceDate) }
             animator.localTalk = { [live] in live.level }
@@ -121,6 +130,11 @@ struct RootView: View {
             }
     }
 
+    /// Plays one of the Keramik avatar's reactions (ignored by Bluey's own face).
+    private func react(_ name: String) {
+        avatarReaction = KeramikReaction(name, id: (avatarReaction?.id ?? 0) + 1)
+    }
+
     /// Connects the live voice to the Mac: keys, tools, captions and wake/sleep.
     private func wireLiveVoice() {
         live.requestToken = { [link] done in
@@ -158,6 +172,7 @@ struct RootView: View {
             case .waking:
                 animator.awake = true
                 animator.localMood = .happy
+                react("wave")
             case .listening:
                 animator.awake = true
                 animator.localMood = nil
@@ -182,9 +197,25 @@ struct RootView: View {
             case "focusChirp":
                 focus.receivedNudge(text ?? "Are you sure you're on task right now?")
                 live.focusChirp()
+                react("stop")
             default: break
             }
         }
+    }
+}
+
+/// The user's Keramik avatar, driven by the same animator moods as Bluey's face.
+struct KeramikFace: View {
+    let animator: FaceAnimator
+    var reaction: KeramikReaction?
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.2)) { timeline in
+            let frame = animator.step(timeline.date.timeIntervalSinceReferenceDate)
+            KeramikAvatarView(mood: KeramikMapping.mood(frame.mood), reaction: reaction)
+        }
+        .background(Color.black)
+        .ignoresSafeArea()
     }
 }
 

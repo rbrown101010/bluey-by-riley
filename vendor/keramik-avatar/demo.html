@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>keramik-avatar – Demo</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #F5F5F7; font-family: Inter, system-ui, -apple-system, sans-serif; color: #1D1D1F; }
+  main { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 40px 16px; }
+  keramik-avatar { --ka-size: min(420px, 90vw); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 760px; }
+  button { font: inherit; font-size: 13px; padding: 8px 12px; border-radius: 10px; border: 1px solid #D1D1D6; background: #FFFFFF; color: #1D1D1F; cursor: pointer; }
+  button:hover { background: #E8E8ED; }
+  h2 { margin: 0; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #6E6E73; }
+</style>
+<script type="module" src="./keramik-avatar.js"></script>
+</head>
+<body>
+<main>
+  <keramik-avatar id="bot" boot></keramik-avatar>
+  <h2>Mimik</h2><div class="row" id="moods"></div>
+  <h2>Reaktion</h2><div class="row" id="reactions"></div>
+  <h2>Aktivität</h2><div class="row" id="activities"></div>
+  <h2>Form &amp; System</h2><div class="row" id="shapes"></div>
+</main>
+<script type="module">
+  import { KeramikAvatar } from './keramik-avatar.js';
+  const bot = document.getElementById('bot');
+  const add = (id, label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = fn; document.getElementById(id).append(b); };
+  KeramikAvatar.moods.forEach((m) => add('moods', m, () => bot.setMood(m)));
+  KeramikAvatar.reactions.forEach((r) => add('reactions', r, () => bot.react(r)));
+  KeramikAvatar.activities.forEach((a) => add('activities', a, () => bot.activity(a, { query: 'Intune Richtlinien' })));
+  add('activities', 'beenden', () => bot.activity(null));
+  KeramikAvatar.shapes.forEach((s) => add('shapes', s, () => bot.setShape(s)));
+  add('shapes', 'Auto-Morph', () => bot.autoMorph(true));
+  add('shapes', 'Antenne an/aus', () => bot.addon('ant', !bot._add().ant));
+  add('shapes', 'Einschalten', () => bot.boot());
+  add('shapes', 'Ausschalten', () => bot.shutdown());
+</script>
+</body>
+</html>
