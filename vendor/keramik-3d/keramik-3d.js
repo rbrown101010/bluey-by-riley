@@ -5,7 +5,9 @@
  *
  * Page needs <div id="ka3d"></div>. Optional: window.KA_FILL (0…1, how much of the view the head fills).
  * API on window.ka: setMood(id), react(id|null), look(x, y) (-1…1, y down; null = wander), boot().
- * Moods: neutral, happy, think, focus, sleep. Reactions: stop, wave, confetti.
+ * Moods and reactions are the same as the 2D avatar's (vendor/keramik-avatar), with the same faces:
+ *   moods: neutral happy think wow focus oops wink sleep question alert meh confused
+ *   reactions: stop idea heart timer confetti coffee thumb wave umbrella magnifier music battery
  */
 (function () {
   'use strict';
@@ -135,7 +137,7 @@
     fx.width = w * dpr; fx.height = h * dpr; fxc.setTransform(dpr, 0, 0, dpr, 0, 0);
     camera.aspect = w / h;
     var tan = Math.tan(camera.fov * Math.PI / 360);
-    var needH = (H + 46) / FILL, needW = (W + 30) / FILL;
+    var needH = (H + 60) / FILL, needW = (W + 70) / FILL;   // room for the arm and props
     var dist = Math.max(needH, needW / camera.aspect) / (2 * tan) + D / 2;
     camera.position.set(0, 6, dist);
     camera.lookAt(0, -6, 0);
@@ -144,201 +146,445 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // ---------- expressions ----------
-  var MOODS = {
-    neutral: { rx: 9.5, ry: 13, arc: 0, closed: 0, mw: 7, curve: 5, open: 0, brow: 0, browTilt: 0, red: 0 },
-    happy:   { rx: 10, ry: 13, arc: 1, closed: 0, mw: 10, curve: 7, open: 6, brow: 0, browTilt: 0, red: 0 },
-    think:   { rx: 8.5, ry: 11, arc: 0, closed: 0, mw: 5, curve: 1, open: 0, brow: 1, browTilt: 0.2, red: 0, look: [0.75, -0.8] },
-    focus:   { rx: 10, ry: 6, arc: 0, closed: 0, mw: 6, curve: 0.5, open: 0, brow: 0, browTilt: 0, red: 0 },
-    sleep:   { rx: 9.5, ry: 13, arc: 0, closed: 1, mw: 4, curve: 2, open: 0, brow: 0, browTilt: 0, red: 0 },
-    stop:    { rx: 10, ry: 10, arc: 0, closed: 0, mw: 6, curve: -4, open: 1.5, brow: 1, browTilt: -0.35, red: 1 }
+
+  // ---------- extras: arm, antenna, headphones ----------
+  var armMat = new T.MeshPhysicalMaterial({ color: 0xf1f1ef, roughness: 0.35, clearcoat: 0.8 });
+  var arm = new T.Group(); head.add(arm);
+  var unitCyl = new T.CylinderGeometry(3.6, 3.6, 1, 16);
+  var upper = new T.Mesh(unitCyl, armMat), lower = new T.Mesh(unitCyl, armMat);
+  var elbowJ = new T.Mesh(new T.SphereGeometry(4.4, 16, 12), armMat);
+  var handJ = new T.Mesh(new T.SphereGeometry(6, 18, 14), armMat);
+  arm.add(upper, lower, elbowJ, handJ);
+  var UP = new T.Vector3(0, 1, 0);
+  function segment(mesh, a, b) {
+    var d = new T.Vector3().subVectors(b, a), len = Math.max(0.001, d.length());
+    mesh.position.copy(a).addScaledVector(d, 0.5);
+    mesh.scale.set(1, len, 1);
+    mesh.quaternion.setFromUnitVectors(UP, d.normalize());
+  }
+  var SHOULDER = new T.Vector3(W / 2 - 2, -4, 2);
+
+  // props are camera-facing sprites drawn on canvases
+  function spriteFrom(draw, w, h) {
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    var tex = new T.CanvasTexture(c); tex.encoding = T.sRGBEncoding;
+    var s = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthTest: true }));
+    s.userData.aspect = h / w;
+    return s;
+  }
+  function emoji(ch) {
+    return spriteFrom(function (c, w, h) {
+      c.font = Math.round(w * 0.78) + 'px "Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif';
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, w / 2, h / 2 + w * 0.05);
+    }, 160, 160);
+  }
+  var PROPS = {
+    stop: spriteFrom(function (c, w, h) {     // red octagon sign on a pole
+      c.fillStyle = '#C7C7CC'; c.fillRect(w / 2 - 5, h * 0.5, 10, h * 0.5);
+      var r = w * 0.44, cx = w / 2, cy = w / 2;
+      c.beginPath();
+      for (var i = 0; i < 8; i++) { var a = Math.PI / 8 + i * Math.PI / 4; c.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a)); }
+      c.closePath(); c.fillStyle = '#FFFFFF'; c.fill();
+      c.save(); c.translate(cx, cy); c.scale(0.86, 0.86); c.translate(-cx, -cy);
+      c.fillStyle = '#FF3B30'; c.fill(); c.restore();
+      c.fillStyle = '#FFFFFF'; c.font = '800 ' + Math.round(w * 0.2) + 'px Inter, system-ui, sans-serif';
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('STOP', cx, cy + 2);
+    }, 160, 260),
+    coffee: emoji('☕️'), thumb: emoji('👍'), wave: emoji('👋'), umbrella: emoji('☂️'),
+    magnifier: emoji('🔍'), confetti: emoji('🎉')
   };
-  var NUM = ['rx', 'ry', 'arc', 'closed', 'mw', 'curve', 'open', 'brow', 'browTilt', 'red'];
-  var mood = 'neutral', reaction = null, reactAt = 0;
-  var cur = Object.assign({}, MOODS.neutral);
-  function target() {
-    if (reaction === 'stop') return MOODS.stop;
-    if (reaction === 'wave' || reaction === 'confetti') return MOODS.happy;
+  Object.keys(PROPS).forEach(function (k) { PROPS[k].visible = false; head.add(PROPS[k]); });
+
+  // where the hand goes (head coordinates), prop size and offset from the hand
+  var HOLD = {
+    stop:      { hand: [W / 2 + 28, 20, 12], size: 56, off: [0, 38, 2] },
+    coffee:    { hand: [W / 2 + 26, -6, 18], size: 48, off: [4, 12, 3] },
+    thumb:     { hand: [W / 2 + 28, 10, 14], size: 52, off: [2, 10, 3] },
+    wave:      { hand: [W / 2 + 28, 30, 10], size: 52, off: [2, 10, 3] },
+    umbrella:  { hand: [W / 2 + 6, 44, 8], size: 120, off: [-58, 40, 0] },
+    confetti:  { hand: [W / 2 + 28, 16, 12], size: 52, off: [2, 12, 3] },
+    magnifier: { hand: [44, -24, FRONT + 20], size: 58, off: [-8, 14, 2] }
+  };
+
+  var antenna = new T.Group(); antenna.position.set(0, H / 2 - 1.5, -2); head.add(antenna);
+  var stem = new T.Mesh(new T.CylinderGeometry(1.3, 1.6, 16, 10), trim); stem.position.y = 8; antenna.add(stem);
+  var lampMat = new T.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1, roughness: 0.3 });
+  var lamp = new T.Mesh(new T.SphereGeometry(4.6, 20, 16), lampMat); lamp.position.y = 18; antenna.add(lamp);
+  var rays = spriteFrom(function (c, w, h) {
+    c.strokeStyle = '#FFD60A'; c.lineWidth = 7; c.lineCap = 'round';
+    for (var i = 0; i < 8; i++) {
+      var a = i * Math.PI / 4;
+      c.beginPath(); c.moveTo(w / 2 + Math.cos(a) * w * 0.26, h / 2 + Math.sin(a) * h * 0.26);
+      c.lineTo(w / 2 + Math.cos(a) * w * 0.42, h / 2 + Math.sin(a) * h * 0.42); c.stroke();
+    }
+  }, 128, 128);
+  rays.position.y = 18; rays.scale.set(34, 34, 1); antenna.add(rays);
+  antenna.scale.set(1, 0.001, 1); antenna.visible = false;
+
+  var phones = new T.Group(); head.add(phones);
+  var phoneMat = new T.MeshPhysicalMaterial({ color: 0x2c2c30, roughness: 0.45, clearcoat: 0.5 });
+  var band = new T.Mesh(new T.TorusGeometry(W / 2 + 6, 3, 10, 60, Math.PI), phoneMat);
+  band.scale.y = (H / 2 + 12) / (W / 2 + 6); phones.add(band);
+  [-1, 1].forEach(function (side) {
+    var cup = new T.Mesh(new T.CylinderGeometry(13, 13, 9, 28), phoneMat);
+    cup.rotation.z = Math.PI / 2; cup.position.set(side * (W / 2 + 4), 0, 0); phones.add(cup);
+  });
+  phones.scale.setScalar(0.001); phones.visible = false;
+
+  // ---------- the original Keramik face, drawn on the display ----------
+  // Same geometry and expressions as the 2D component (vendor/keramik-avatar), in its 200 × 196 face space.
+  var KC = 1.333;
+  var CFG = { ex1: 80, ex2: 120, ey: 96, rx: 10, ry: 15, look: 0.9, aw: 11, ah: 8, bg: 20, bw: 8, my: 126, mw: 8 };
+  function nr(v) { return Math.round(v * 100) / 100; }
+  function P() { var a = []; for (var i = 0; i < arguments.length; i++) { var x = arguments[i]; a.push(typeof x === 'number' ? nr(x) : x); } return a.join(' '); }
+  function eyeP(C, e, cx) {
+    var s = e.s || 'open', k = e.sc || 1, sy = e.sy || 1, look = C.look || 1, cy = C.ey;
+    if (s === 'arc') { var Hh = C.ah * 1.4; return [cx - C.aw, cy + C.ah * 0.4, cx + C.aw, cy + C.ah * 0.4, Hh * KC, -(Hh - 4.5) * KC]; }
+    if (s === 'closed') { var Dd = C.ah * 0.7; return [cx - C.aw, cy, cx + C.aw, cy, -Dd * KC, (Dd + 4) * KC]; }
+    var px = cx + (e.dx || 0) * look, py = cy + (e.dy || 0) * look, rx = C.rx * k, ry = C.ry * k * sy;
+    return [px - rx, py, px + rx, py, ry * KC, ry * KC];
+  }
+  function mouthP(C, m) {
+    var x = 100, y = C.my, w = C.mw;
+    switch (m) {
+      case 'big': return [x - w * 1.2, y - 2, x + w * 1.2, y - 2, 0, 0, w * 1.3 * KC, w * 1.3 * KC];
+      case 'side': return [x - w * 0.5, y + 3, x + w * 0.8, y - 2, 2.5, 2.5, 6.5, 6.5];
+      case 'o': return [x - w * 0.34, y + 3, x + w * 0.34, y + 3, -w * 0.44 * KC, -w * 0.44 * KC, w * 0.44 * KC, w * 0.44 * KC];
+      case 'flat': return [x - w * 0.5, y + 3, x + w * 0.5, y + 3, -1, -1, 1, 1];
+      case 'frown': return [x - w * 0.7, y + 6, x + w * 0.7, y + 6, -9, -9, -4.5, -4.5];
+      case 'wave': return [x - w * 0.8, y + 4, x + w * 0.8, y + 4, -7, 7, -3.5, 10.5];
+      case 'smirk': return [x - w * 0.7, y + 1, x + w * 0.9, y - 4, 5, 5, 9, 9];
+      default: return [x - w, y, x + w, y, w * 0.6 * KC, w * 0.6 * KC, (w * 0.6 + 3.2) * KC, (w * 0.6 + 3.2) * KC];
+    }
+  }
+  function browP(C, b) {
+    var a = C.ex1, c = C.ex2, by = C.ey - C.bg, w = C.bw;
+    switch (b) {
+      case 'raise': return [a - w, by + 1, a, by - 2, a + w, by + 1, c - w, by - 5, c, by - 12, c + w, by - 5, 1];
+      case 'up': return [a - w, by - 4, a, by - 11, a + w, by - 4, c - w, by - 4, c, by - 11, c + w, by - 4, 1];
+      case 'sad': return [a - w, by + 2, a, by - 1, a + w, by - 4, c - w, by - 4, c, by - 1, c + w, by + 2, 1];
+      case 'angry': return [a - w, by - 3, a, by, a + w, by + 3, c - w, by + 3, c, by, c + w, by - 3, 1];
+      default: return [a - w, by, a, by - 3, a + w, by, c - w, by, c, by - 3, c + w, by, 0];
+    }
+  }
+  function faceVec(md) {
+    var t = md.t || {};
+    return [].concat(eyeP(CFG, md.L, CFG.ex1), eyeP(CFG, md.R, CFG.ex2), mouthP(CFG, md.m), browP(CFG, md.b), [t.r || 0, t.ty || 0, t.s || 1]);
+  }
+  function eyeD(v, i, bl) {
+    var x0 = v[i], y0 = v[i + 1], x1 = v[i + 2], y1 = v[i + 3], kt = v[i + 4] * bl, kb = v[i + 5] * bl;
+    return P('M', x0, y0, 'C', x0, y0 - kt, x1, y1 - kt, x1, y1, 'C', x1, y1 + kb, x0, y0 + kb, x0, y0, 'Z');
+  }
+  function mouthD(v, i) {
+    var x0 = v[i], y0 = v[i + 1], x1 = v[i + 2], y1 = v[i + 3], Wd = x1 - x0;
+    return P('M', x0, y0, 'C', x0 + Wd * 0.1, y0 + v[i + 4], x1 - Wd * 0.1, y1 + v[i + 5], x1, y1,
+      'C', x1 - Wd * 0.1, y1 + v[i + 7], x0 + Wd * 0.1, y0 + v[i + 6], x0, y0, 'Z');
+  }
+  function browD(v, i) {
+    return P('M', v[i], v[i + 1], 'Q', v[i + 2], v[i + 3], v[i + 4], v[i + 5], 'M', v[i + 6], v[i + 7], 'Q', v[i + 8], v[i + 9], v[i + 10], v[i + 11]);
+  }
+
+  var MOODS = {
+    neutral:  { L: {}, R: {}, m: 'smile', t: {} },
+    happy:    { L: { s: 'arc' }, R: { s: 'arc' }, m: 'big', t: { ty: -6, s: 1.04 } },
+    think:    { L: { dx: 5, dy: -6, sy: 0.9 }, R: { dx: 5, dy: -6, sy: 0.9 }, m: 'side', b: 'raise', t: { r: -6 } },
+    wow:      { L: { sc: 1.18 }, R: { sc: 1.18 }, m: 'o', b: 'up', t: { ty: -8, s: 1.06 } },
+    focus:    { L: { sy: 0.42, dy: 3 }, R: { sy: 0.42, dy: 3 }, m: 'flat', t: { ty: 2, s: 0.97 } },
+    oops:     { L: { dy: 4, sy: 0.85 }, R: { dy: 4, sy: 0.85 }, m: 'wave', b: 'sad', t: { r: 5, ty: 3, s: 0.96 } },
+    wink:     { L: {}, R: { s: 'arc' }, m: 'smirk', t: { r: 4, ty: -2 } },
+    sleep:    { L: { s: 'closed' }, R: { s: 'closed' }, m: 'flat', t: { ty: 4, s: 0.95 }, sym: 'zzz' },
+    question: { L: { dx: -4, dy: -5, sy: 0.9 }, R: { dx: -4, dy: -5, sy: 0.9 }, m: 'side', b: 'raise', t: { r: -5 }, sym: '?' },
+    alert:    { L: { sc: 1.2 }, R: { sc: 1.2 }, m: 'o', b: 'up', t: { ty: -6, s: 1.05 }, sym: '!' },
+    meh:      { L: { sy: 0.55, dy: 2 }, R: { sy: 0.55, dy: 2 }, m: 'frown', b: 'angry', t: { r: 3 }, sym: '!?' },
+    confused: { L: { sc: 0.85 }, R: { sc: 1.15, dy: -2 }, m: 'wave', b: 'raise', t: { r: -5 }, sym: '??' }
+  };
+  var REACTS = {
+    stop:      { L: { sy: 0.55, dy: 1 }, R: { sy: 0.55, dy: 1 }, m: 'frown', b: 'angry', t: { r: -3 } },
+    idea:      { L: { sc: 1.12, dy: -4 }, R: { sc: 1.12, dy: -4 }, m: 'smile', b: 'up', t: { ty: -6, s: 1.04 } },
+    heart:     { L: { s: 'arc' }, R: { s: 'arc' }, m: 'big', t: { ty: -4 } },
+    timer:     { L: {}, R: {}, m: 'flat', t: { r: 2 } },
+    confetti:  { L: { s: 'arc' }, R: { s: 'arc' }, m: 'big', t: { ty: -10, s: 1.07 } },
+    coffee:    { L: { s: 'arc' }, R: { s: 'arc' }, m: 'smile', t: { ty: 2, r: 2 } },
+    thumb:     { L: { s: 'arc' }, R: { s: 'arc' }, m: 'big', t: { ty: -3 } },
+    wave:      { L: {}, R: { s: 'arc' }, m: 'big', t: { r: -3 } },
+    umbrella:  { L: { dy: -5 }, R: { dy: -5 }, m: 'smile', t: {} },
+    magnifier: { L: { sy: 0.55 }, R: { sc: 1.5 }, m: 'flat', b: 'raise', t: { r: -3 } },
+    music:     { L: { s: 'closed' }, R: { s: 'closed' }, m: 'smile', t: {} },
+    battery:   { L: { s: 'closed' }, R: { s: 'closed' }, m: 'flat', t: { ty: 5, r: 4, s: 0.95 } }
+  };
+  var TIMER_DONE = { L: { s: 'arc' }, R: { s: 'arc' }, m: 'smile', t: {} };
+
+  // ---------- state ----------
+  var mood = 'neutral', reaction = null, reactAt = 0, bootAt = 0;
+  var vec = faceVec(MOODS.neutral);
+  var gazeTarget = null, wander = { x: 0, y: 0 }, nextWander = 0;
+  var faceG = { x: 0, y: 0 }, headG = { x: 0, y: 0 };
+  var blinkAt = 1.5, blinkStart = -1;
+  var armK = 0, antK = 0, phonesK = 0, prop = null;
+  var parts = [];      // hearts, notes, rain, confetti (2D overlay)
+  var posed = null;    // fixed head angles for inspection, see pose()
+  var t0 = performance.now() / 1000, last = t0, lastSpawn = 0;
+
+  function now() { return performance.now() / 1000 - t0; }
+  function spring(o, x, y, k) { o.x += (x - o.x) * k; o.y += (y - o.y) * k; }
+  function timerDone(t) { return reaction === 'timer' && t - reactAt > 3; }
+  function currentDef(t) {
+    if (reaction) return timerDone(t) ? TIMER_DONE : REACTS[reaction];
     return MOODS[mood] || MOODS.neutral;
   }
 
-  // ---------- motion state ----------
-  var gazeTarget = null;                    // set by look(); null = wander on his own
-  var wander = { x: 0, y: 0 }, nextWander = 0;
-  var faceG = { x: 0, y: 0 }, headG = { x: 0, y: 0 };
-  var blinkAt = 1.5, blinkStart = -1, bootAt = 0;
-  var confetti = [];
-  var posed = null;   // fixed head angles for inspection, see pose()
-  var t0 = performance.now() / 1000, last = t0;
-
-  function spring(o, x, y, k) { o.x += (x - o.x) * k; o.y += (y - o.y) * k; }
-
-  // ---------- drawing the face ----------
-  function drawFace(t, f, bootK) {
+  // ---------- drawing the display ----------
+  var SC = Math.min(SW / 120, SH / 92);   // the 2D component's face scale for this display
+  function drawFace(t, bl, faceAlpha) {
     var c = fc;
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, FW, FH);
-    // the display: near-black with a soft lift in the middle
     var bg = c.createRadialGradient(FW / 2, FH * 0.55, 0, FW / 2, FH * 0.55, FW * 0.6);
     bg.addColorStop(0, '#24262b'); bg.addColorStop(1, '#101114');
     c.fillStyle = bg; c.fillRect(0, 0, FW, FH);
-    c.setTransform(K, 0, 0, K, FW / 2, FH / 2);  // screen units, origin in the middle
 
-    var glow = f.red > 0.5 ? '#FF453A' : '#F4F7FF';
-    var alpha = bootK;
-    c.globalAlpha = alpha;
-    c.shadowColor = f.red > 0.5 ? 'rgba(255,69,58,0.9)' : 'rgba(225,235,255,0.85)';
-    c.shadowBlur = 9 * K;
+    var red = reaction === 'stop';
+    var glow = red ? '#FF453A' : '#F4F7FF';
+    c.shadowColor = red ? 'rgba(255,69,58,0.9)' : 'rgba(225,235,255,0.85)';
+    c.shadowBlur = 8 * K;
     c.fillStyle = glow; c.strokeStyle = glow; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.globalAlpha = faceAlpha;
 
-    // eyes glance ahead of the head
-    var ex = faceG.x * 22, ey = faceG.y * 11;
-    var blink = 0;
-    if (blinkStart >= 0) { var b = (t - blinkStart) / 0.16; blink = b < 0.5 ? b * 2 : Math.max(0, (1 - b) * 2); }
-    [-1, 1].forEach(function (side) {
-      var cx = side * 23 + ex, cy = -7 + ey;
-      // open eye
-      var open = (1 - f.arc) * (1 - f.closed);
-      if (open > 0.02) {
-        c.globalAlpha = alpha * Math.min(1, open * 1.4);
-        var ry = Math.max(0.8, f.ry * (1 - 0.92 * blink));
-        c.beginPath(); c.ellipse(cx, cy, f.rx, ry, 0, 0, Math.PI * 2); c.fill();
-      }
-      // happy arc ∩
-      if (f.arc > 0.02) {
-        c.globalAlpha = alpha * f.arc; c.lineWidth = 4.2;
-        c.beginPath(); c.moveTo(cx - f.rx, cy + 3); c.quadraticCurveTo(cx, cy - f.ry * 1.25, cx + f.rx, cy + 3); c.stroke();
-      }
-      // closed (sleep) ∪
-      if (f.closed > 0.02) {
-        c.globalAlpha = alpha * f.closed; c.lineWidth = 3.6;
-        c.beginPath(); c.moveTo(cx - f.rx, cy); c.quadraticCurveTo(cx, cy + 7, cx + f.rx, cy); c.stroke();
-      }
-      // brows
-      if (f.brow > 0.02) {
-        c.globalAlpha = alpha * f.brow; c.lineWidth = 3;
-        var by = cy - f.ry - 6, tilt = f.browTilt * side;
-        c.beginPath(); c.moveTo(cx - 9, by - 9 * tilt); c.lineTo(cx + 9, by + 9 * tilt); c.stroke();
-      }
-    });
-    // mouth follows the eyes, a little less
-    c.globalAlpha = alpha;
-    var mx = ex * 0.7, my = 21 + ey * 0.6, w = f.mw, cv = f.curve, op = f.open;
-    c.lineWidth = 3.4;
-    c.beginPath();
-    c.moveTo(mx - w, my);
-    c.quadraticCurveTo(mx, my + cv * 0.9, mx + w, my);
-    if (op > 0.3) { c.quadraticCurveTo(mx, my + cv * 0.9 + op * 2.2, mx - w, my); c.closePath(); c.fill(); }
-    c.stroke();
-    // z z Z while asleep
-    if (f.closed > 0.5) {
-      c.shadowBlur = 5 * K; c.font = '700 9px Inter, system-ui, sans-serif';
-      for (var i = 0; i < 3; i++) {
-        var p = ((t * 0.45 + i / 3) % 1);
-        c.globalAlpha = alpha * Math.sin(p * Math.PI) * 0.9;
-        c.font = '700 ' + (7 + i * 2.5) + 'px Inter, system-ui, sans-serif';
-        c.fillText(i === 2 ? 'Z' : 'z', 34 + i * 7 + p * 6, -14 - p * 18);
+    var screenOnly = (reaction === 'timer' && !timerDone(t)) || reaction === 'battery';
+    if (reaction === 'timer' && !timerDone(t)) {
+      c.setTransform(K, 0, 0, K, FW / 2, FH / 2);
+      c.globalAlpha = faceAlpha * (Math.floor(t * 2) % 2 ? 0.3 : 1);
+      c.textAlign = 'center'; c.font = '700 30px Inter, system-ui, sans-serif'; c.fillText('00:00', 0, 8);
+      c.font = '700 8.5px Inter, system-ui, sans-serif'; c.fillText('ABGELAUFEN', 0, 24);
+    } else if (reaction === 'battery') {
+      c.setTransform(K, 0, 0, K, FW / 2, FH / 2);
+      c.lineWidth = 2.4; c.shadowBlur = 5 * K;
+      c.beginPath(); c.roundRect ? c.roundRect(-24, -20, 44, 22, 4) : c.rect(-24, -20, 44, 22); c.stroke();
+      c.fillRect(21.5, -13, 4, 8);
+      c.fillStyle = '#FF453A'; c.globalAlpha = faceAlpha * (Math.floor(t * 2) % 2 ? 0.25 : 1);
+      c.fillRect(-20.5, -16.5, 6, 15);
+      c.globalAlpha = faceAlpha; c.fillStyle = glow; c.textAlign = 'center';
+      c.font = '700 8.5px Inter, system-ui, sans-serif'; c.fillText('AKKU 5 %', 0, 18);
+    }
+    if (!screenOnly) {
+      // eyes glance ahead of the head; the mouth follows a little less
+      var ex = faceG.x * 20, ey = faceG.y * 10;
+      var base = function (dx, dy) { c.setTransform(K * SC, 0, 0, K * SC, FW / 2 + dx * K, FH / 2 + dy * K); c.translate(-100, -98); };
+      base(ex, ey);
+      var eyes = new Path2D(eyeD(vec, 0, bl) + ' ' + eyeD(vec, 6, bl));
+      c.fill(eyes); c.lineWidth = 1; c.stroke(eyes);
+      var bo = Math.max(0, Math.min(1, vec[32]));
+      if (bo > 0.01) { c.globalAlpha = faceAlpha * bo; c.lineWidth = 3.5; c.stroke(new Path2D(browD(vec, 20))); c.globalAlpha = faceAlpha; }
+      base(ex * 0.7, ey * 0.7);
+      var m = new Path2D(mouthD(vec, 12));
+      c.fill(m); c.lineWidth = 2.2; c.stroke(m);
+
+      // the mood's symbol, top right of the display (as on the 2D avatar)
+      var def = currentDef(t);
+      c.setTransform(K, 0, 0, K, FW / 2 + 48 * K, FH / 2 - 17 * K);
+      if (def.sym === 'zzz') {
+        c.shadowBlur = 5 * K;
+        for (var i = 0; i < 3; i++) {
+          var p = (t / 2.4 + i / 3) % 1;
+          c.globalAlpha = faceAlpha * Math.sin(p * Math.PI);
+          c.font = '700 ' + (10 + i * 3) + 'px Inter, system-ui, sans-serif';
+          c.fillText(i === 2 ? 'Z' : 'z', -6 + p * 8, 4 - p * 22);
+        }
+      } else if (def.sym) {
+        var pulse = 1 + 0.08 * Math.sin(t * 4.8);
+        c.scale(pulse, pulse); c.globalAlpha = faceAlpha;
+        c.textAlign = 'center'; c.font = '700 20px Inter, system-ui, sans-serif'; c.fillText(def.sym, 0, 7);
       }
     }
+    c.setTransform(K, 0, 0, K, FW / 2, FH / 2);
     c.globalAlpha = 1; c.shadowBlur = 0;
-    // glass reflection (top left), as on the 2D avatar
     c.strokeStyle = 'rgba(255,255,255,0.22)'; c.lineWidth = 2.4;
     c.beginPath(); c.moveTo(-56, -14); c.quadraticCurveTo(-52, -32, -36, -36); c.stroke();
     faceTex.needsUpdate = true;
   }
 
-  // ---------- confetti ----------
+  // ---------- overlay effects (hearts, notes, rain, confetti) ----------
+  var tmpV = new T.Vector3();
+  function toScreen(x, y, z, obj) {
+    tmpV.set(x, y, z).applyMatrix4((obj || head).matrixWorld).project(camera);
+    return { x: (tmpV.x + 1) / 2 * root.clientWidth, y: (1 - tmpV.y) / 2 * root.clientHeight };
+  }
+  function pxPerUnit() {
+    var a = toScreen(-W / 2, 0, FRONT), b = toScreen(W / 2, 0, FRONT);
+    return Math.max(0.2, Math.hypot(b.x - a.x, b.y - a.y) / W);
+  }
   var COLORS = ['#FF453A', '#FFD60A', '#30D158', '#64D2FF', '#BF5AF2', '#FF9F0A'];
-  function burst() {
-    var w = root.clientWidth, h = root.clientHeight;
+  function burst(at, u) {
     for (var i = 0; i < 90; i++) {
-      var a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, s = 4 + Math.random() * 7;
-      confetti.push({ x: w / 2, y: h * 0.45, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: Math.random() * 6,
-        vr: (Math.random() - 0.5) * 0.4, c: COLORS[i % COLORS.length], life: 1 });
+      var a = -Math.PI / 2 + 0.5 + (Math.random() - 0.5) * 1.8, s = (3 + Math.random() * 6) * u * 2;
+      parts.push({ kind: 'confetti', x: at.x, y: at.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: Math.random() * 6,
+        vr: (Math.random() - 0.5) * 0.4, c: COLORS[i % COLORS.length], life: 1, u: u });
     }
   }
-  function drawConfetti(dt) {
+  function spawnAmbient(t, u) {
+    if (t - lastSpawn < (reaction === 'umbrella' ? 0.03 : 0.35)) return;
+    lastSpawn = t;
+    var top = toScreen(0, H / 2, 0);
+    if (reaction === 'heart') {
+      parts.push({ kind: 'heart', x: top.x + (Math.random() - 0.5) * W * u, y: top.y + 10 * u, vx: (Math.random() - 0.5) * 0.4, vy: -1.1 * u, life: 1, s: (0.7 + Math.random() * 0.6) * u, r: 0, vr: 0 });
+    } else if (reaction === 'music') {
+      var side = Math.random() < 0.5 ? -1 : 1, ear = toScreen(side * (W / 2 + 8), 6, 0);
+      parts.push({ kind: 'note', x: ear.x, y: ear.y, vx: side * 0.5 * u, vy: -0.9 * u, life: 1, s: u, ch: Math.random() < 0.5 ? '♪' : '♫', r: 0, vr: 0 });
+    } else if (reaction === 'umbrella' && armK > 0.95) {
+      var span = W * 1.3 * u;
+      parts.push({ kind: 'rain', x: top.x + 20 * u + (Math.random() - 0.5) * span, y: top.y - 90 * u, vx: -0.6 * u, vy: 7 * u, life: 1, s: u, r: 0, vr: 0, floor: top.y - 40 * u });
+    }
+  }
+  function heartPath(c, s) {
+    c.beginPath(); c.moveTo(0, 3 * s);
+    c.bezierCurveTo(-6 * s, -2 * s, -4 * s, -8 * s, 0, -5 * s);
+    c.bezierCurveTo(4 * s, -8 * s, 6 * s, -2 * s, 0, 3 * s); c.fill();
+  }
+  function drawParts(dt) {
     var w = root.clientWidth, h = root.clientHeight;
     fxc.clearRect(0, 0, w, h);
-    if (!confetti.length) return;
+    if (!parts.length) return;
     var n = dt * 60;
-    confetti = confetti.filter(function (p) {
-      p.vy += 0.22 * n; p.vx *= Math.pow(0.99, n); p.x += p.vx * n; p.y += p.vy * n; p.r += p.vr * n; p.life -= 0.006 * n;
-      if (p.life <= 0 || p.y > h + 20) return false;
+    parts = parts.filter(function (p) {
+      if (p.kind === 'confetti') { p.vy += 0.22 * n * p.u; p.vx *= Math.pow(0.99, n); p.life -= 0.006 * n; }
+      else if (p.kind === 'rain') { if (p.y > p.floor) p.life = 0; }
+      else { p.life -= 0.012 * n; p.x += Math.sin((1 - p.life) * 9) * 0.3 * n; }
+      p.x += p.vx * n; p.y += p.vy * n; p.r += p.vr * n;
+      if (p.life <= 0 || p.y > h + 20 || p.y < -40) return false;
       fxc.save(); fxc.globalAlpha = Math.min(1, p.life * 2); fxc.translate(p.x, p.y); fxc.rotate(p.r);
-      fxc.fillStyle = p.c; fxc.fillRect(-3, -1.6, 6, 3.2); fxc.restore();
+      if (p.kind === 'confetti') { fxc.fillStyle = p.c; fxc.fillRect(-3 * p.u, -1.6 * p.u, 6 * p.u, 3.2 * p.u); }
+      else if (p.kind === 'heart') { fxc.fillStyle = '#FF375F'; heartPath(fxc, p.s * 1.6); }
+      else if (p.kind === 'note') { fxc.fillStyle = '#F4F7FF'; fxc.font = '700 ' + Math.round(20 * p.s) + 'px Inter, system-ui, sans-serif'; fxc.fillText(p.ch, 0, 0); }
+      else if (p.kind === 'rain') { fxc.strokeStyle = 'rgba(120,190,255,0.8)'; fxc.lineWidth = 1.6 * p.s; fxc.beginPath(); fxc.moveTo(0, 0); fxc.lineTo(-1 * p.s, 8 * p.s); fxc.stroke(); }
+      fxc.restore();
       return true;
     });
   }
 
   // ---------- loop ----------
-  function frame() {
-    var now = performance.now() / 1000, t = now - t0, dt = Math.min(0.05, now - last);
-    last = now;
-    var n = dt * 60;   // per-frame easing scaled to 60 fps
+  var easeK = function (k) { var c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+  var SNAP = !!window.KA_SNAP;   // previews: jump straight to each pose instead of animating
+  function step() {
+    var tNow = performance.now() / 1000, t = tNow - t0, dt = Math.min(0.05, tNow - last);
+    last = tNow;
+    var n = SNAP ? 1000 : dt * 60;
+    var def = currentDef(t);
 
-    // expression
-    var tg = target(), ke = 1 - Math.pow(1 - 0.16, n);
-    NUM.forEach(function (k) { cur[k] += (tg[k] - cur[k]) * ke; });
+    // expression: morph the face vector toward the target, like the 2D avatar
+    var tv = faceVec(def), ke = 1 - Math.pow(1 - 0.18, n);
+    for (var i = 0; i < vec.length; i++) vec[i] += (tv[i] - vec[i]) * ke;
 
-    // where to look
+    // gaze
     var want;
-    var ml = MOODS[mood] && MOODS[mood].look;
-    if (ml && !reaction) want = { x: ml[0], y: ml[1] };
-    else if (gazeTarget) want = gazeTarget;
+    if (gazeTarget) want = gazeTarget;
     else {
       if (t > nextWander) { wander = { x: Math.random() * 1.6 - 0.8, y: Math.random() * 1.0 - 0.6 }; nextWander = t + 0.8 + Math.random() * 2.2; }
       want = wander;
     }
-    spring(faceG, want.x, want.y, 1 - Math.pow(1 - 0.22, n));   // eyes: quick
-    spring(headG, want.x, want.y, 1 - Math.pow(1 - 0.045, n));  // head: follows slowly
+    var busyFace = reaction === 'magnifier' || reaction === 'battery' || reaction === 'timer';
+    spring(faceG, busyFace ? 0 : want.x, busyFace ? 0 : want.y, 1 - Math.pow(1 - 0.22, n));
+    spring(headG, want.x, want.y, 1 - Math.pow(1 - 0.045, n));
 
-    // blinking
+    // blinking (open eyes only)
+    var eyesOpen = !def.L.s && !def.R.s;
     if (t > blinkAt && blinkStart < 0) blinkStart = t;
-    if (blinkStart >= 0 && t - blinkStart > 0.16) {
-      blinkStart = -1;
-      blinkAt = t + (Math.random() < 0.22 ? 0.18 : 2.2 + Math.random() * 3.4);
+    var blink = 0;
+    if (blinkStart >= 0) {
+      var b = (t - blinkStart) / 0.17;
+      if (b >= 1) { blinkStart = -1; blinkAt = t + (Math.random() < 0.22 ? 0.18 : 2.4 + Math.random() * 3.2); }
+      else blink = b < 0.5 ? b * 2 : (1 - b) * 2;
     }
+    var bl = eyesOpen ? 1 - 0.92 * blink : 1;
 
-    // head pose
-    var bootK = Math.min(1, Math.max(0, (t - bootAt) / 0.9));
+    // arm, antenna, headphones
+    var hold = reaction && HOLD[reaction];
+    armK += ((hold ? 1 : 0) - armK) * (1 - Math.pow(1 - 0.12, n));
+    if (hold) prop = reaction;
+    antK += (((reaction === 'idea' || reaction === 'stop') ? 1 : 0) - antK) * (1 - Math.pow(1 - 0.12, n));
+    phonesK += ((reaction === 'music' ? 1 : 0) - phonesK) * (1 - Math.pow(1 - 0.12, n));
+
+    arm.visible = armK > 0.02;
+    Object.keys(PROPS).forEach(function (k) { PROPS[k].visible = false; });
+    if (arm.visible && prop) {
+      var hd = HOLD[prop], k = easeK(Math.min(1, armK));
+      var handT = new T.Vector3(hd.hand[0], hd.hand[1], hd.hand[2]);
+      if (prop === 'wave') { handT.x += Math.sin(t * 9) * 5; handT.y += Math.cos(t * 9) * 1.5; }
+      var hand = SHOULDER.clone().lerp(handT, k);
+      var elbow = SHOULDER.clone().lerp(hand, 0.5).add(new T.Vector3(8 * k, -10 * k, prop === 'magnifier' ? 10 * k : 2 * k));
+      segment(upper, SHOULDER, elbow); segment(lower, elbow, hand);
+      elbowJ.position.copy(elbow); handJ.position.copy(hand);
+      var ps = PROPS[prop], size = hd.size * Math.max(0, Math.min(1, (armK - 0.55) / 0.4));
+      if (size > 0.5) {
+        ps.visible = true;
+        ps.position.set(hand.x + hd.off[0], hand.y + hd.off[1], hand.z + hd.off[2]);
+        ps.scale.set(size, size * ps.userData.aspect, 1);
+        ps.material.rotation = prop === 'wave' ? Math.sin(t * 9) * 0.35 : 0;
+      }
+    }
+    antenna.visible = antK > 0.01;
+    antenna.scale.set(1, Math.max(0.001, easeK(Math.min(1, antK))), 1);
+    var lampColor = reaction === 'stop' ? 0xff453a : (reaction === 'idea' ? 0xffd60a : 0xffffff);
+    lampMat.color.setHex(lampColor); lampMat.emissive.setHex(lampColor);
+    rays.visible = reaction === 'idea' && antK > 0.9;
+    if (rays.visible) { var rs = 30 + Math.sin(t * 6) * 4; rays.scale.set(rs, rs, 1); }
+    phones.visible = phonesK > 0.01;
+    phones.scale.setScalar(Math.max(0.001, easeK(Math.min(1, phonesK))));
+
+    // head pose: gaze turn plus the expression's own tilt, lift and scale
+    var bootK = SNAP ? 1 : Math.min(1, Math.max(0, (t - bootAt) / 0.9));
     var ease = 1 - Math.pow(1 - bootK, 3);
-    var rt = t - reactAt;
-    var yaw = headG.x * 0.38, pitch = headG.y * 0.2, roll = Math.sin(t * 0.7) * 0.015 - headG.x * 0.03;
-    var bob = Math.sin(t * 1.8) * 1.2;
-    if (mood === 'think' && !reaction) roll += 0.07;
-    if (mood === 'sleep' && !reaction) { pitch += 0.16; bob = Math.sin(t * 1.1) * 2; }
-    if (reaction === 'stop') yaw += Math.sin(rt * 28) * 0.07 * Math.max(0, 1 - rt / 0.7);
-    if (reaction === 'wave') roll += Math.sin(rt * 9) * 0.1 * Math.max(0, 1 - rt / 2.2);
-    if (reaction === 'confetti') bob += Math.max(0, Math.sin(Math.min(rt, 0.5) * Math.PI * 2)) * 10;
+    var yaw = headG.x * 0.38, pitch = headG.y * 0.2;
+    var roll = Math.sin(t * 0.7) * 0.015 - headG.x * 0.03 - vec[33] * Math.PI / 180;
+    var bob = Math.sin(t * 1.8) * 1.2 - vec[34];
+    var sc = vec[35];
+    if (mood === 'sleep' && !reaction) bob = Math.sin(t * 1.1) * 2.2 - vec[34];
+    if (reaction === 'music') { roll += Math.sin(t * 3.2) * 0.07; bob += Math.abs(Math.sin(t * 3.2)) * 1.5; }
+    if (reaction === 'battery') { pitch += 0.12; bob += Math.sin(t * 0.9) * 0.6; }
+    if (reaction === 'stop') yaw += Math.sin((t - reactAt) * 26) * 0.06 * Math.max(0, 1 - (t - reactAt) / 0.6);
     if (posed) { yaw = posed[0]; pitch = posed[1]; roll = 0; }
     pivot.rotation.set(pitch, yaw, roll);
     pivot.position.y = bob;
-    var sc = 0.86 + 0.14 * ease;
-    pivot.scale.set(sc, sc, sc);
+    var s = (0.86 + 0.14 * ease) * sc;
+    pivot.scale.set(s, s, s);
     shadow.material.opacity = 0.9 * ease * (1 - bob / 30);
     shadow.scale.setScalar(1 - bob / 80);
 
-    drawFace(t, cur, Math.min(1, Math.max(0, (t - bootAt - 0.35) / 0.4)));
+    drawFace(t, bl, SNAP ? 1 : Math.min(1, Math.max(0, (t - bootAt - 0.35) / 0.4)));
     renderer.render(scene, camera);
-    drawConfetti(dt);
-    requestAnimationFrame(frame);
+
+    pivot.updateMatrixWorld(true);
+    var u = pxPerUnit();
+    if (reaction) spawnAmbient(t, u);
+    if (reaction === 'confetti' && !confettiFired && armK > 0.9) {
+      confettiFired = true;
+      var hp = HOLD.confetti.hand;
+      burst(toScreen(hp[0] + 6, hp[1] + 10, hp[2]), u);
+    }
+    drawParts(dt);
   }
-  requestAnimationFrame(frame);
+  function frame() { step(); requestAnimationFrame(frame); }
+  var confettiFired = false;
+  if (!SNAP) requestAnimationFrame(frame);
 
   // ---------- API ----------
   var api = {
     setMood: function (id) { mood = MOODS[id] ? id : 'neutral'; reaction = null; return api; },
-    react: function (id) { reaction = id || null; reactAt = performance.now() / 1000 - t0; if (id === 'confetti') burst(); return api; },
+    react: function (id) {
+      reaction = id && REACTS[id] ? id : null; reactAt = now(); confettiFired = false;
+      return api;
+    },
     look: function (x, y) {
       gazeTarget = x == null ? null : { x: Math.max(-1, Math.min(1, +x || 0)), y: Math.max(-1, Math.min(1, +y || 0)) };
       return api;
     },
     /** Holds the head at fixed angles (radians) to inspect the model; pose(null) releases it. */
     pose: function (yaw, pitch) { posed = yaw == null ? null : [yaw, pitch || 0]; return api; },
-    boot: function () { bootAt = performance.now() / 1000 - t0; return api; },
+    boot: function () { bootAt = now(); return api; },
     // the 2D avatar's other calls are accepted and ignored
-    setShape: function () { return api; }, shutdown: function () { return api; }, activity: function () { return api; }
+    setShape: function () { return api; }, shutdown: function () { return api; }, activity: function () { return api; },
+    moods: Object.keys(MOODS), reactions: Object.keys(REACTS),
+    _step: step, _canvas: renderer.domElement
   };
   window.ka = api;
 })();

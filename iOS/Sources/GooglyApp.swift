@@ -241,15 +241,17 @@ struct AvatarTestBar: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            HStack(spacing: 6) {
+            row {
                 ForEach(KeramikTest.moods, id: \.id) { item in
                     chip(item.title, on: mood == item.id) { mood = item.id }
                 }
                 chip("Live", on: mood == nil) { mood = nil }
             }
             HStack(spacing: 6) {
-                ForEach(KeramikTest.reactions, id: \.id) { item in
-                    chip(item.title, on: false) { react(item.id) }
+                row {
+                    ForEach(KeramikTest.reactions, id: \.id) { item in
+                        chip(item.title, on: false) { react(item.id) }
+                    }
                 }
                 Button(action: close) {
                     Image(systemName: "xmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
@@ -259,8 +261,14 @@ struct AvatarTestBar: View {
                 .accessibilityLabel("Close avatar test")
             }
         }
+        .padding(.horizontal, 16)
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+    }
+
+    /// One scrolling row of chips (there are more than fit across the screen).
+    private func row<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 6) { content() } }
     }
 
     private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {

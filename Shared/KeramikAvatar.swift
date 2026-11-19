@@ -22,10 +22,15 @@ public enum AvatarStyle: String, CaseIterable, Sendable {
 
 /// Everything the avatar can show, for the test buttons on iPhone and Mac.
 public enum KeramikTest {
+    /// The avatar's own moods and reactions, with the names from its design.
     public static let moods: [(id: String, title: String)] = [
-        ("neutral", "Neutral"), ("happy", "Happy"), ("think", "Thinking"), ("focus", "Focused"), ("sleep", "Asleep")]
+        ("neutral", "Neutral"), ("happy", "Freude"), ("think", "Nachdenken"), ("wow", "Überrascht"),
+        ("focus", "Arbeitet"), ("oops", "Oops"), ("wink", "Zwinkern"), ("sleep", "Schlafen"),
+        ("question", "Frage"), ("alert", "Achtung"), ("meh", "Nicht gut"), ("confused", "Verwirrt")]
     public static let reactions: [(id: String, title: String)] = [
-        ("stop", "Off task (stop)"), ("wave", "Wave"), ("confetti", "Confetti")]
+        ("stop", "Stopp"), ("idea", "Idee"), ("heart", "Herz"), ("timer", "Timer"),
+        ("confetti", "Konfetti"), ("coffee", "Kaffee"), ("thumb", "Daumen hoch"), ("wave", "Winken"),
+        ("umbrella", "Regenschirm"), ("magnifier", "Lupe"), ("music", "Musik"), ("battery", "Akku leer")]
 }
 
 /// Maps Bluey's moods onto the Keramik avatar's expressions. The avatar's HUD activities show sample
