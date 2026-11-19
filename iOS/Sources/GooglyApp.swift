@@ -27,14 +27,16 @@ struct RootView: View {
     @State private var holdingToAsk = false
     @AppStorage(AvatarStyle.defaultsKey) private var avatar: AvatarStyle = .keramik3D
     @State private var avatarReaction: KeramikReaction?
+    @State private var testingAvatar = false
+    @State private var testMood: String?
 
     var body: some View {
         ZStack {
             Group {
                 switch avatar {
                 case .bluey: FaceView(animator: animator)
-                case .keramik: KeramikFace(animator: animator, reaction: avatarReaction)
-                case .keramik3D: KeramikFace(animator: animator, reaction: avatarReaction, model3D: true)
+                case .keramik: KeramikFace(animator: animator, reaction: avatarReaction, moodOverride: testMood)
+                case .keramik3D: KeramikFace(animator: animator, reaction: avatarReaction, moodOverride: testMood, model3D: true)
                 }
             }
             .allowsHitTesting(false)
@@ -42,6 +44,13 @@ struct RootView: View {
                 .contentShape(Rectangle())
                 .onTapGesture(count: 2) { live.toggle() }  // double tap: wake up / back to follow mode
                 .simultaneousGesture(holdToAsk)
+
+            if testingAvatar && avatar != .bluey {
+                AvatarTestBar(mood: $testMood, react: react) {
+                    testingAvatar = false
+                    testMood = nil
+                }
+            }
 
             ModeIndicator(state: live.state)
 
@@ -71,7 +80,7 @@ struct RootView: View {
         .ignoresSafeArea()
         .phoneChrome()
         .fullScreenCover(isPresented: $showApp) {
-            BlueyAppView(store: store, live: live, link: link, focus: focus, openFocus: { showApp = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showFocus = true } }, pairMac: { showApp = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { scanPairing = true } }) { showApp = false }
+            BlueyAppView(store: store, live: live, link: link, focus: focus, openFocus: { showApp = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { showFocus = true } }, pairMac: { showApp = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { scanPairing = true } }, testAvatar: { showApp = false; testingAvatar = true }) { showApp = false }
         }
         .sheet(isPresented: $showFocus) { FocusDashboard(focus: focus, link: link) }
         .sheet(isPresented: $scanPairing) { QRPairingView(link: link) }
@@ -209,16 +218,60 @@ struct RootView: View {
 struct KeramikFace: View {
     let animator: FaceAnimator
     var reaction: KeramikReaction?
+    /// A mood picked on the test bar wins over the live one.
+    var moodOverride: String?
     var model3D = false
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.1)) { timeline in
             let frame = animator.step(timeline.date.timeIntervalSinceReferenceDate)
-            KeramikAvatarView(mood: KeramikMapping.mood(frame.mood), gaze: frame.gaze, reaction: reaction,
+            KeramikAvatarView(mood: moodOverride ?? KeramikMapping.mood(frame.mood), gaze: frame.gaze, reaction: reaction,
                               zoom: model3D ? 1.0 : 1.4, model3D: model3D)
         }
         .background(Color.black)
         .ignoresSafeArea()
+    }
+}
+
+/// Buttons along the bottom of the face to try every mood and reaction of the Keramik avatar.
+struct AvatarTestBar: View {
+    @Binding var mood: String?
+    var react: (String) -> Void
+    var close: () -> Void
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 6) {
+                ForEach(KeramikTest.moods, id: \.id) { item in
+                    chip(item.title, on: mood == item.id) { mood = item.id }
+                }
+                chip("Live", on: mood == nil) { mood = nil }
+            }
+            HStack(spacing: 6) {
+                ForEach(KeramikTest.reactions, id: \.id) { item in
+                    chip(item.title, on: false) { react(item.id) }
+                }
+                Button(action: close) {
+                    Image(systemName: "xmark").font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 30, height: 30).background(Circle().fill(Color.white.opacity(0.18)))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close avatar test")
+            }
+        }
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+    }
+
+    private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(on ? .black : .white)
+                .padding(.horizontal, 10).frame(height: 30)
+                .background(Capsule().fill(on ? Color.white : Color.white.opacity(0.18)))
+        }
+        .buttonStyle(.plain)
     }
 }
 

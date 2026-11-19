@@ -43,7 +43,17 @@ final class AvatarWindow {
 
     func hide() { panel?.orderOut(nil) }
 
+    private var testUntil = Date.distantPast
+
+    /// Shows a mood for a few seconds (from the menu's test items), then goes back to the live one.
+    func test(mood: String) {
+        show()
+        testUntil = Date().addingTimeInterval(6)
+        model.mood = mood
+    }
+
     func update(_ face: FaceState) {
+        guard Date() >= testUntil else { return }
         let mood = KeramikMapping.mood(face.mood)
         if model.mood != mood { model.mood = mood }
     }
@@ -59,6 +69,7 @@ final class AvatarWindow {
     }
 
     func react(_ name: String) {
+        show()
         model.reaction = KeramikReaction(name, id: (model.reaction?.id ?? 0) + 1)
     }
 

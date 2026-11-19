@@ -210,6 +210,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
     @objc private func toggleShow() { settings.showCursor.toggle() }
+    @objc private func testAvatarMood(_ item: NSMenuItem) {
+        if let id = item.representedObject as? String { avatarWindow.test(mood: id) }
+    }
+    @objc private func testAvatarReaction(_ item: NSMenuItem) {
+        if let id = item.representedObject as? String { avatarWindow.react(id) }
+    }
     @objc private func toggleAvatarWindow() {
         settings.showAvatarWindow.toggle()
         if settings.showAvatarWindow { avatarWindow.show() } else { avatarWindow.hide() }
@@ -426,6 +432,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         avatar.target = self
         avatar.state = settings.showAvatarWindow ? .on : .off
         menu.addItem(avatar)
+        let testMenu = NSMenu()
+        for mood in KeramikTest.moods {
+            let m = NSMenuItem(title: mood.title, action: #selector(testAvatarMood(_:)), keyEquivalent: "")
+            m.target = self; m.representedObject = mood.id; testMenu.addItem(m)
+        }
+        testMenu.addItem(.separator())
+        for reaction in KeramikTest.reactions {
+            let r = NSMenuItem(title: reaction.title, action: #selector(testAvatarReaction(_:)), keyEquivalent: "")
+            r.target = self; r.representedObject = reaction.id; testMenu.addItem(r)
+        }
+        menu.addItem(submenu("Test Avatar", testMenu))
 
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit Bluey", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))

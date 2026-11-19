@@ -20,6 +20,14 @@ public enum AvatarStyle: String, CaseIterable, Sendable {
     }
 }
 
+/// Everything the avatar can show, for the test buttons on iPhone and Mac.
+public enum KeramikTest {
+    public static let moods: [(id: String, title: String)] = [
+        ("neutral", "Neutral"), ("happy", "Happy"), ("think", "Thinking"), ("focus", "Focused"), ("sleep", "Asleep")]
+    public static let reactions: [(id: String, title: String)] = [
+        ("stop", "Off task (stop)"), ("wave", "Wave"), ("confetti", "Confetti")]
+}
+
 /// Maps Bluey's moods onto the Keramik avatar's expressions. The avatar's HUD activities show sample
 /// data, so only moods and reactions are used.
 public enum KeramikMapping {

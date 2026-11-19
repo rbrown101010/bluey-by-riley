@@ -9,6 +9,7 @@ struct BlueyAppView: View {
     @ObservedObject var focus: FocusClient
     var openFocus: () -> Void
     var pairMac: () -> Void
+    var testAvatar: () -> Void
     var onClose: () -> Void
     @State private var volume = 1.0
     @AppStorage(AvatarStyle.defaultsKey) private var avatar: AvatarStyle = .keramik3D
@@ -102,6 +103,9 @@ struct BlueyAppView: View {
                         ForEach(AvatarStyle.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
+                    if avatar != .bluey {
+                        Button("Test moods and reactions", action: testAvatar).buttonStyle(.bordered)
+                    }
                 }
 
                 if link.macs.count > 1 {

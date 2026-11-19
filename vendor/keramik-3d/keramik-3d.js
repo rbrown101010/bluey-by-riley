@@ -49,16 +49,23 @@
   scene.add(new T.HemisphereLight(0xffffff, 0x30323a, 0.35));
 
   // ---------- the head ----------
-  var W = 176, H = 116, D = 92;            // overall size, like the 2D capsule (176 × 116)
-  var BS = 12, BT = 18;                     // rounded edges: bevel size / thickness
+  var W = 176, H = 116, D = 56;            // overall size, like the 2D capsule (176 × 116), fairly slim
+  var BS = 12, BT = 13;                     // rounded edges: bevel size / thickness
+  // Rounded rectangle (a full capsule when r = h / 2) as one clean outline: corner arcs sampled
+  // evenly and no repeated points, so the surfaces triangulate without gaps or creases.
   function pill(w, h, r) {
-    var s = new T.Shape(), x = -w / 2, y = -h / 2;
     r = Math.min(r, w / 2, h / 2);
-    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.absarc(x + w - r, y + r, r, -Math.PI / 2, 0, false);
-    s.lineTo(x + w, y + h - r); s.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2, false);
-    s.lineTo(x + r, y + h); s.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI, false);
-    s.lineTo(x, y + r); s.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5, false);
-    return s;
+    var hw = w / 2 - r, hh = h / 2 - r, pts = [], N = 24;
+    [[hw, hh, 0], [-hw, hh, 0.5], [-hw, -hh, 1], [hw, -hh, 1.5]].forEach(function (c) {
+      for (var i = 0; i <= N; i++) {
+        var a = (c[2] + 0.5 * i / N) * Math.PI;
+        var p = new T.Vector2(c[0] + r * Math.cos(a), c[1] + r * Math.sin(a));
+        var prev = pts[pts.length - 1];
+        if (!prev || prev.distanceTo(p) > 1e-3) pts.push(p);
+      }
+    });
+    if (pts[0].distanceTo(pts[pts.length - 1]) < 1e-3) pts.pop();
+    return new T.Shape(pts);
   }
   var head = new T.Group();
   var pivot = new T.Group();               // turns, nods and bobs the whole head
@@ -67,7 +74,7 @@
   var ceramic = new T.MeshPhysicalMaterial({ color: 0xf3f3f1, roughness: 0.32, metalness: 0, clearcoat: 1,
     clearcoatRoughness: 0.12, envMapIntensity: 1.0 });
   var bodyGeo = new T.ExtrudeGeometry(pill(W - 2 * BS, H - 2 * BS, (H - 2 * BS) / 2), {
-    depth: D - 2 * BT, bevelEnabled: true, bevelThickness: BT, bevelSize: BS, bevelSegments: 14, curveSegments: 72 });
+    depth: D - 2 * BT, bevelEnabled: true, bevelThickness: BT, bevelSize: BS, bevelSegments: 14 });
   bodyGeo.center();
   head.add(new T.Mesh(bodyGeo, ceramic));
   var FRONT = D / 2;
@@ -80,7 +87,7 @@
   var faceTex = new T.CanvasTexture(faceCanvas);
   faceTex.encoding = T.sRGBEncoding;
   faceTex.anisotropy = 4;
-  var screenGeo = new T.ShapeGeometry(pill(SW, SH, SR), 48);
+  var screenGeo = new T.ShapeGeometry(pill(SW, SH, SR));
   // ShapeGeometry UVs are in shape units; map them onto the canvas.
   (function () {
     var uv = screenGeo.attributes.uv, pos = screenGeo.attributes.position;
@@ -94,7 +101,7 @@
   glass.position.z = FRONT + 0.6;
   head.add(glass);
   // a thin dark rim where the glass meets the ceramic
-  var rimGeo = new T.ShapeGeometry((function () { var s = pill(SW + 4, SH + 4, SR + 2); s.holes.push(pill(SW, SH, SR)); return s; })(), 48);
+  var rimGeo = new T.ShapeGeometry((function () { var s = pill(SW + 4, SH + 4, SR + 2); s.holes.push(new T.Path(pill(SW, SH, SR).getPoints())); return s; })());
   var rim = new T.Mesh(rimGeo, new T.MeshStandardMaterial({ color: 0xd7d8db, roughness: 0.5 }));
   rim.position.z = FRONT + 0.1; head.add(rim);
 
@@ -102,10 +109,10 @@
   var trim = new T.MeshPhysicalMaterial({ color: 0xe9eaec, roughness: 0.4, clearcoat: 0.6 });
   [-1, 1].forEach(function (side) {
     var pod = new T.Mesh(new T.CapsuleGeometry(4.2, 20, 8, 16), trim);
-    pod.position.set(side * (W / 2 - 1.2), 0, 6); head.add(pod);
+    pod.position.set(side * (W / 2 - 1.2), 0, 2); head.add(pod);
   });
   var slot = new T.Mesh(new T.CapsuleGeometry(3.4, 14, 8, 16), trim);
-  slot.rotation.z = Math.PI / 2; slot.position.set(0, H / 2 - 2.6, 8); head.add(slot);
+  slot.rotation.z = Math.PI / 2; slot.position.set(0, H / 2 - 2.6, 4); head.add(slot);
 
   // Soft contact shadow under him.
   var shCanvas = document.createElement('canvas'); shCanvas.width = shCanvas.height = 128;
@@ -114,7 +121,7 @@
     g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = g; c.fillRect(0, 0, 128, 128);
   })();
-  var shadow = new T.Mesh(new T.PlaneGeometry(W * 1.1, D * 0.9),
+  var shadow = new T.Mesh(new T.PlaneGeometry(W * 1.1, D * 1.2),
     new T.MeshBasicMaterial({ map: new T.CanvasTexture(shCanvas), transparent: true, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = -H / 2 - 16;
   scene.add(shadow);
@@ -141,10 +148,10 @@
   var MOODS = {
     neutral: { rx: 9.5, ry: 13, arc: 0, closed: 0, mw: 7, curve: 5, open: 0, brow: 0, browTilt: 0, red: 0 },
     happy:   { rx: 10, ry: 13, arc: 1, closed: 0, mw: 10, curve: 7, open: 6, brow: 0, browTilt: 0, red: 0 },
-    think:   { rx: 8.5, ry: 11, arc: 0, closed: 0, mw: 5, curve: 1, open: 0, brow: 1, browTilt: -0.25, red: 0, look: [0.75, -0.8] },
+    think:   { rx: 8.5, ry: 11, arc: 0, closed: 0, mw: 5, curve: 1, open: 0, brow: 1, browTilt: 0.2, red: 0, look: [0.75, -0.8] },
     focus:   { rx: 10, ry: 6, arc: 0, closed: 0, mw: 6, curve: 0.5, open: 0, brow: 0, browTilt: 0, red: 0 },
     sleep:   { rx: 9.5, ry: 13, arc: 0, closed: 1, mw: 4, curve: 2, open: 0, brow: 0, browTilt: 0, red: 0 },
-    stop:    { rx: 10, ry: 10, arc: 0, closed: 0, mw: 6, curve: -4, open: 1.5, brow: 1, browTilt: 0.35, red: 1 }
+    stop:    { rx: 10, ry: 10, arc: 0, closed: 0, mw: 6, curve: -4, open: 1.5, brow: 1, browTilt: -0.35, red: 1 }
   };
   var NUM = ['rx', 'ry', 'arc', 'closed', 'mw', 'curve', 'open', 'brow', 'browTilt', 'red'];
   var mood = 'neutral', reaction = null, reactAt = 0;
@@ -161,6 +168,7 @@
   var faceG = { x: 0, y: 0 }, headG = { x: 0, y: 0 };
   var blinkAt = 1.5, blinkStart = -1, bootAt = 0;
   var confetti = [];
+  var posed = null;   // fixed head angles for inspection, see pose()
   var t0 = performance.now() / 1000, last = t0;
 
   function spring(o, x, y, k) { o.x += (x - o.x) * k; o.y += (y - o.y) * k; }
@@ -303,6 +311,7 @@
     if (reaction === 'stop') yaw += Math.sin(rt * 28) * 0.07 * Math.max(0, 1 - rt / 0.7);
     if (reaction === 'wave') roll += Math.sin(rt * 9) * 0.1 * Math.max(0, 1 - rt / 2.2);
     if (reaction === 'confetti') bob += Math.max(0, Math.sin(Math.min(rt, 0.5) * Math.PI * 2)) * 10;
+    if (posed) { yaw = posed[0]; pitch = posed[1]; roll = 0; }
     pivot.rotation.set(pitch, yaw, roll);
     pivot.position.y = bob;
     var sc = 0.86 + 0.14 * ease;
@@ -325,6 +334,8 @@
       gazeTarget = x == null ? null : { x: Math.max(-1, Math.min(1, +x || 0)), y: Math.max(-1, Math.min(1, +y || 0)) };
       return api;
     },
+    /** Holds the head at fixed angles (radians) to inspect the model; pose(null) releases it. */
+    pose: function (yaw, pitch) { posed = yaw == null ? null : [yaw, pitch || 0]; return api; },
     boot: function () { bootAt = performance.now() / 1000 - t0; return api; },
     // the 2D avatar's other calls are accepted and ignored
     setShape: function () { return api; }, shutdown: function () { return api; }, activity: function () { return api; }
