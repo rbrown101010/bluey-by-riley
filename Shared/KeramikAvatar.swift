@@ -53,8 +53,11 @@ public struct KeramikAvatarView {
     public var reaction: KeramikReaction?
     /// How long a reaction stays before he goes back to `mood`.
     public var reactionSeconds: Double
+    /// Size relative to the view's shorter fit; above 1 crops the empty margin around him.
+    public var zoom: Double
 
-    public init(mood: String, gaze: CGPoint? = nil, reaction: KeramikReaction? = nil, reactionSeconds: Double = 4) {
+    public init(mood: String, gaze: CGPoint? = nil, reaction: KeramikReaction? = nil, reactionSeconds: Double = 4, zoom: Double = 0.96) {
+        self.zoom = zoom
         self.mood = mood
         self.gaze = gaze
         self.reaction = reaction
@@ -141,7 +144,7 @@ public struct KeramikAvatarView {
         #endif
         coordinator.web = web
         coordinator.pending = self
-        web.loadHTMLString(Self.page, baseURL: nil)
+        web.loadHTMLString(Self.page(zoom: zoom), baseURL: nil)
         return web
     }
 
@@ -154,16 +157,19 @@ public struct KeramikAvatarView {
             + "\nwindow.ka = document.getElementById('bot');\n"
     }()
 
-    static let page = """
+    static func page(zoom: Double) -> String {
+        let z = String(format: "%.1f", zoom * 100)
+        return """
     <!doctype html><html><head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <style>
       html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
       body { display: flex; align-items: center; justify-content: center; }
-      keramik-avatar { --ka-size: min(140vw, calc(140vh * 280 / 260)); flex-shrink: 0; }
+      keramik-avatar { --ka-size: min(\(z)vw, calc(\(z)vh * 280 / 260)); flex-shrink: 0; }
     </style></head>
     <body><keramik-avatar id="bot" shape="kapsel" boot></keramik-avatar></body></html>
     """
+    }
 }
 
 #if os(iOS)

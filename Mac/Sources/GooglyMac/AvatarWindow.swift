@@ -30,7 +30,15 @@ final class AvatarWindow {
 
     func show() {
         if panel == nil { panel = makePanel() }
-        panel?.orderFrontRegardless()
+        guard let panel else { return }
+        // Keep it fully on screen (a remembered spot may be off-screen after a size or display change).
+        if let visible = (panel.screen ?? NSScreen.main)?.visibleFrame {
+            var frame = panel.frame
+            frame.origin.x = min(max(frame.minX, visible.minX), visible.maxX - frame.width)
+            frame.origin.y = min(max(frame.minY, visible.minY), visible.maxY - frame.height)
+            panel.setFrame(frame, display: false)
+        }
+        panel.orderFrontRegardless()
     }
 
     func hide() { panel?.orderOut(nil) }
@@ -67,6 +75,7 @@ final class AvatarWindow {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
         panel.setFrameAutosaveName("KeramikAvatarWindow")
+        panel.setContentSize(size)  // the remembered spot keeps its place, but takes the current size
 
         let container = NSView(frame: NSRect(origin: .zero, size: size))
         let host = NSHostingView(rootView: Content(model: model))
