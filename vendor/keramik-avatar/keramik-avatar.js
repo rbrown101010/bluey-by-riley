@@ -1142,22 +1142,13 @@ class Component extends DCLogic {
     if (reactId === 'battery') { bodyTy += Math.sin(tn * 0.9) * 0.6; }
     if (eyesOpen) { v[0] += lookX; v[2] += lookX; v[6] += lookX; v[8] += lookX; v[1] += lookY; v[3] += lookY; v[7] += lookY; v[9] += lookY; }
     if (gz && !actId && !booting) {
-      // Bluey: the face turns with the gaze, like a head turning. The eye on the side he looks toward
-      // moves to the edge and gets smaller, the other one grows; the mouth slides along, narrows and
-      // its far half thins out; the brows follow the eyes.
-      var turn = self._gs.x;
-      var scaleEye = function (i, k) {
-        var cx = (v[i] + v[i + 2]) / 2, half = (v[i + 2] - v[i]) / 2 * k;
-        v[i] = cx - half; v[i + 2] = cx + half; v[i + 4] *= k; v[i + 5] *= k;
-      };
-      scaleEye(0, 1 + 0.22 * turn);   // left eye: smaller when looking left
-      scaleEye(6, 1 - 0.22 * turn);   // right eye: smaller when looking right
+      // Bluey: the whole head turns toward where he looks (a real 3D turn, so the far eye and the far
+      // side of the mouth get smaller by perspective). The face also slides a little on its screen.
+      var turn = self._gs.x, nod = self._gs.y;
       var mx = 0.8 * lookX, my = 0.6 * lookY;
-      var mc = (v[12] + v[14]) / 2, mk = 1 - 0.2 * Math.abs(turn);
-      v[12] = mc + (v[12] - mc) * mk + mx; v[14] = mc + (v[14] - mc) * mk + mx;
-      v[13] += my; v[15] += my;
-      var kl = 1 + 0.35 * turn, kr = 1 - 0.35 * turn;   // curve depth at the left / right end of the mouth
-      v[16] *= kl; v[18] *= kl; v[17] *= kr; v[19] *= kr;
+      v[12] += mx; v[14] += mx; v[13] += my; v[15] += my;
+      var svgEl = self._host && self._host.shadowRoot && self._host.shadowRoot.querySelector('svg.ka');
+      if (svgEl) svgEl.style.transform = 'perspective(900px) rotateY(' + nr(26 * turn) + 'deg) rotateX(' + nr(-12 * nod) + 'deg)';
       for (var bi = 20; bi < 32; bi += 2) { v[bi] += 0.9 * lookX; v[bi + 1] += 0.8 * lookY; }
     }
     var bl = eyesOpen ? 1 - 0.92 * (st.blink || 0) : 1;
@@ -1347,6 +1338,7 @@ class KeramikAvatar extends HTMLElement {
   look(x, y) {
     const c = this._c; if (!c) return this;
     c.gaze = x == null ? null : { x: Math.max(-1, Math.min(1, +x || 0)), y: Math.max(-1, Math.min(1, +y || 0)) };
+    if (x == null) { const svg = this.shadowRoot.querySelector('svg.ka'); if (svg) svg.style.transform = ''; }
     return this;
   }
   /** Körperform: squircle, kapsel, kiesel, helm, monitor */
