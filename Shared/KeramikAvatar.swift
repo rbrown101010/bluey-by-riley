@@ -31,6 +31,11 @@ public enum KeramikTest {
         ("stop", "Stopp"), ("idea", "Idee"), ("heart", "Herz"), ("timer", "Timer"),
         ("confetti", "Konfetti"), ("coffee", "Kaffee"), ("thumb", "Daumen hoch"), ("wave", "Winken"),
         ("umbrella", "Regenschirm"), ("magnifier", "Lupe"), ("music", "Musik"), ("battery", "Akku leer")]
+    /// Brille auf, HUD auf (the HUD shows sample data, only the clock and the query are real).
+    public static let activities: [(id: String, title: String)] = [
+        ("activity:search", "Recherche"), ("activity:tasks", "Aufgaben"), ("activity:mail", "Post"),
+        ("activity:cal", "Kalender"), ("activity:run", "Terminal")]
+    public static let power: [(id: String, title: String)] = [("shutdown", "Ausschalten"), ("boot", "Einschalten")]
 }
 
 /// Maps Bluey's moods onto the Keramik avatar's expressions. The avatar's HUD activities show sample
@@ -52,10 +57,32 @@ import SwiftUI
 import WebKit
 
 /// A one-shot reaction (an arm with a sign, confetti …). A new `id` plays it again.
+/// Also carries `activity:<id>` (glasses and HUD), `boot` and `shutdown`.
 public struct KeramikReaction: Equatable, Sendable {
     public var name: String
     public var id: Int
-    public init(_ name: String, id: Int) { self.name = name; self.id = id }
+    /// How long it stays before he goes back to his mood (long enough for the whole choreography).
+    public var seconds: Double
+    public init(_ name: String, id: Int) {
+        self.name = name
+        self.id = id
+        if name.hasPrefix("activity:") { seconds = 16 }
+        else if name == "boot" { seconds = 7.5 }
+        else if name == "shutdown" { seconds = 3 }
+        else if name == "timer" { seconds = 7 }
+        else { seconds = 6 }
+    }
+
+    /// The JavaScript call that starts it.
+    var script: String {
+        if name.hasPrefix("activity:") {
+            let id = String(name.dropFirst("activity:".count))
+            return "window.ka && ka.activity(\(KeramikAvatarView.Coordinator.js(id)), { query: 'Wetter morgen' })"
+        }
+        if name == "boot" { return "window.ka && ka.boot()" }
+        if name == "shutdown" { return "window.ka && ka.shutdown()" }
+        return "window.ka && ka.react(\(KeramikAvatarView.Coordinator.js(name)))"
+    }
 }
 
 /// The user's own Keramik avatar in a transparent web view: either the original 2D web component
@@ -66,21 +93,18 @@ public struct KeramikAvatarView {
     /// Where the eyes look, -1…1 (y down), like Bluey's gaze. Nil lets them wander on their own.
     public var gaze: CGPoint?
     public var reaction: KeramikReaction?
-    /// How long a reaction stays before he goes back to `mood`.
-    public var reactionSeconds: Double
     /// Size relative to the view's shorter fit; above 1 crops the empty margin around him.
     public var zoom: Double
     /// True for the 3D head. Fixed once the view exists.
     public var model3D: Bool
 
-    public init(mood: String, gaze: CGPoint? = nil, reaction: KeramikReaction? = nil, reactionSeconds: Double = 4,
+    public init(mood: String, gaze: CGPoint? = nil, reaction: KeramikReaction? = nil,
                 zoom: Double = 0.96, model3D: Bool = false) {
         self.zoom = zoom
         self.model3D = model3D
         self.mood = mood
         self.gaze = gaze
         self.reaction = reaction
-        self.reactionSeconds = reactionSeconds
     }
 
     public final class Coordinator: NSObject, WKNavigationDelegate {
@@ -113,11 +137,12 @@ public struct KeramikAvatarView {
             }
             if let reaction = view.reaction, reaction.id != playedReaction {
                 playedReaction = reaction.id
-                reactionUntil = Date().addingTimeInterval(view.reactionSeconds)
-                web.evaluateJavaScript("window.ka && ka.react(\(Self.js(reaction.name)))")
-                let id = reaction.id
-                DispatchQueue.main.asyncAfter(deadline: .now() + view.reactionSeconds) { [weak self] in
+                reactionUntil = Date().addingTimeInterval(reaction.seconds)
+                web.evaluateJavaScript(reaction.script)
+                let id = reaction.id, wasShutdown = reaction.name == "shutdown"
+                DispatchQueue.main.asyncAfter(deadline: .now() + reaction.seconds) { [weak self] in
                     guard let self, self.playedReaction == id, let latest = self.pending else { return }
+                    if wasShutdown { self.web?.evaluateJavaScript("window.ka && ka.boot()") }   // a test switches him back on
                     self.shownMood = nil
                     self.reactionUntil = .distantPast
                     self.apply(latest)

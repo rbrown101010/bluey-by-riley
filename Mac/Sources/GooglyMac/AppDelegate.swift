@@ -438,7 +438,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             m.target = self; m.representedObject = mood.id; testMenu.addItem(m)
         }
         testMenu.addItem(.separator())
-        for reaction in KeramikTest.reactions {
+        for reaction in KeramikTest.reactions + [("", "")] + KeramikTest.activities + [("", "")] + KeramikTest.power {
+            if reaction.id.isEmpty { testMenu.addItem(.separator()); continue }
             let r = NSMenuItem(title: reaction.title, action: #selector(testAvatarReaction(_:)), keyEquivalent: "")
             r.target = self; r.representedObject = reaction.id; testMenu.addItem(r)
         }

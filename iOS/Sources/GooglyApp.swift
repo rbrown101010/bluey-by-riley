@@ -247,9 +247,14 @@ struct AvatarTestBar: View {
                 }
                 chip("Live", on: mood == nil) { mood = nil }
             }
+            row {
+                ForEach(KeramikTest.reactions, id: \.id) { item in
+                    chip(item.title, on: false) { react(item.id) }
+                }
+            }
             HStack(spacing: 6) {
                 row {
-                    ForEach(KeramikTest.reactions, id: \.id) { item in
+                    ForEach(KeramikTest.activities + KeramikTest.power, id: \.id) { item in
                         chip(item.title, on: false) { react(item.id) }
                     }
                 }
