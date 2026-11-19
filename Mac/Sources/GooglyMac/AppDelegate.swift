@@ -72,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 case "focusResume": result = self.focus.resume()
                 case "focusEnd": result = self.focus.end()
                 case "focusTestNudge": result = self.focus.testNudge()
+                case "focusAppeal": result = self.focus.appeal(reason: args["reason"] as? String ?? "")
                 case "focusDeveloperMode":
                     if let enabled = args["developerMode"] as? Bool { result = self.focus.setDeveloperMode(enabled) }
                     else { result = "Specify whether Developer Mode is on or off." }
@@ -207,6 +208,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func pauseFocus() { focus.pause() }
     @objc private func resumeFocus() { _ = focus.resume() }
     @objc private func endFocus() { _ = focus.end() }
+    @objc private func appealFocus() { _ = focus.appeal() }
     @objc private func toggleFocusDeveloperMode() { focus.setDeveloperMode(!focus.developerMode) }
     @objc private func setTrail(_ item: NSMenuItem) {
         if let raw = item.representedObject as? String, let trail = PointerTrail(rawValue: raw) { settings.trail = trail }
@@ -325,6 +327,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             title.isEnabled = false; menu.addItem(title)
             menu.addItem(item(session.status == .running ? "Pause Focus" : "Resume Focus", session.status == .running ? #selector(pauseFocus) : #selector(resumeFocus)))
             menu.addItem(item("End Focus", #selector(endFocus)))
+            if session.status == .running { menu.addItem(item(session.appealing == true ? "Checking whether that's work…" : "That's Work: Check Again", #selector(appealFocus))) }
+            for key in session.blocked ?? [] {
+                let locked = NSMenuItem(title: "🔒 Locked this session: \(key)", action: nil, keyEquivalent: "")
+                locked.isEnabled = false; menu.addItem(locked)
+            }
         }
         let developer = item("Developer Mode (4× · checks every 10s)", #selector(toggleFocusDeveloperMode))
         developer.state = focus.developerMode ? .on : .off

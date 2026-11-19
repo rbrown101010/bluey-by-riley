@@ -13,6 +13,10 @@ struct FocusFaceHUD: View {
                     Text(focus.current.flatMap { $0.status == .ended ? nil : $0.task } ?? "What's the mission?")
                         .font(.fredoka(22)).lineLimit(2)
                     Text(status).font(.plexMono(10)).foregroundStyle(.white.opacity(0.65))
+                    if let locked = focus.current?.blocked, !locked.isEmpty, focus.current?.status != .ended {
+                        Label("Locked: \(locked.joined(separator: ", "))", systemImage: "lock.fill")
+                            .font(.plexMono(11)).foregroundStyle(Color(hex: 0xEBAC73))
+                    }
                     if focus.developerMode {
                         Text("Developer Mode · 4× clock · checks every 10s")
                             .font(.plexMono(10)).foregroundStyle(.white.opacity(0.8))
@@ -38,6 +42,11 @@ struct FocusFaceHUD: View {
                         }.disabled(!focus.fresh)
                         icon("stop.fill", label: "End focus") { focus.command("focusEnd") }
                             .disabled(!focus.fresh)
+                        if session.status == .running, session.checks.last(where: { $0.activity != .paused })?.activity == .offTask {
+                            icon(session.appealing == true ? "hourglass" : "briefcase.fill", label: "That's work, check again") {
+                                focus.command("focusAppeal")
+                            }.disabled(!focus.fresh || session.appealing == true)
+                        }
                     }
                     icon("scope", label: "Focus sessions", action: open)
                     Image(systemName: voiceIcon)
@@ -103,6 +112,7 @@ struct FocusFaceHUD: View {
         guard let session = focus.current, session.status != .ended else { return "Hold Bluey and describe a task" }
         guard focus.fresh else { return "Connection lost · monitoring will pause" }
         if session.status == .paused { return "Paused" }
+        if session.appealing == true { return "Checking whether that's work…" }
         guard let check = session.checks.last(where: { $0.activity != .paused }) else { return "Focusing together" }
         switch check.activity {
         case .offTask: return "Off task · \(check.probability.focusPercent) estimate\(check.nudged ? " · nudged" : "")"
@@ -119,6 +129,7 @@ struct FocusDashboard: View {
     @Environment(\.dismiss) private var dismiss
     @State private var task = ""
     @State private var minutes = 30.0
+    @State private var reason = ""
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -151,6 +162,18 @@ struct FocusDashboard: View {
                             }
                             Button("End focus") { focus.command("focusEnd") }
                         }.buttonStyle(.bordered).disabled(!link.connected || !focus.fresh)
+                        if session.status == .running {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Flagged off task by mistake?").font(.fredoka(20))
+                                TextField("Why it's part of your work (optional)", text: $reason).textFieldStyle(.roundedBorder)
+                                Button(session.appealing == true ? "Checking…" : "That's my work, check again") {
+                                    focus.command("focusAppeal", reason: reason); reason = ""
+                                }.buttonStyle(.borderedProminent)
+                                    .disabled(!link.connected || !focus.fresh || session.appealing == true)
+                                Text("A smarter model looks at the last off-task screen. If it's work, that site counts as work for this session. If not, it's locked until the session ends.")
+                                    .font(.plexSans(12)).foregroundStyle(.secondary)
+                            }
+                        }
                     } else {
                         Text("A little company. A little focus.").font(.fredoka(26))
                         Text("Hold Bluey and say what you're working on, or type it here.").font(.plexSans(14))
@@ -193,6 +216,14 @@ private struct FocusSummary: View {
             }
             Text("\(session.startedAt.formatted(date: .abbreviated, time: .shortened)) · \(FocusSession.clock(session.elapsed)) active")
                 .font(.plexMono(11)).foregroundStyle(.secondary)
+            if let locked = session.blocked, !locked.isEmpty {
+                Label("Locked this session: \(locked.joined(separator: ", "))", systemImage: "lock.fill")
+                    .font(.plexSans(12)).foregroundStyle(Color(hex: 0xEBAC73))
+            }
+            if let approved = session.approved, !approved.isEmpty {
+                Label("Approved as work: \(approved.joined(separator: ", "))", systemImage: "checkmark.seal")
+                    .font(.plexSans(12)).foregroundStyle(.green)
+            }
             Button { inspect("all") } label: {
                 FocusTimeline(session: session).frame(height: 40)
             }.buttonStyle(.plain).accessibilityLabel("Inspect focus checks")
@@ -303,6 +334,7 @@ private struct FocusCheckDetail: View {
                         .foregroundStyle(.secondary)
                 }
                 if check.nudged { Label("Bluey gave a gentle nudge after this check", systemImage: "bubble.left") }
+                if check.approved == true { Label("Skipped: approved as work after your appeal", systemImage: "checkmark.seal") }
             }
         }.navigationTitle("Check details")
     }

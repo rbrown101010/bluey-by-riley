@@ -16,7 +16,7 @@ The task appears at the phone's top left, with a large white countdown at bottom
 
 ## Screen sharing and privacy
 
-During a running focus session the Mac captures its **main display every 30 seconds** (every **10 real seconds in Developer Mode**), excluding Bluey's own windows, and sends a reduced JPEG to OpenAI with the declared task, active elapsed time, idle duration and up to eight recent check results. Real active time is distinguished from the accelerated test clock. If a nudge becomes due, a separate Responses request receives a fresh image and OCR target labels to prepare a short bubble and optional pointer target. No automatic clicking, app closing, website blocking or Codex delegation occurs in the monitoring path.
+During a running focus session the Mac captures its **main display every 30 seconds** (every **10 real seconds in Developer Mode**), excluding Bluey's own windows, and sends a reduced JPEG to OpenAI with the declared task, active elapsed time, idle duration and up to eight recent check results. Real active time is distinguished from the accelerated test clock. If a nudge becomes due, a separate Responses request receives a fresh image and OCR target labels to prepare a short bubble and optional pointer target. No automatic clicking, app closing or Codex delegation occurs in the monitoring path. Sending you back to work and session locks are described under **That's work**.
 
 Bluey keeps screenshots in memory and does not save them by default. Local focus history stores the task, timings, classifications, model probability/confidence estimates and nudge markers, not images or OCR text. Mac history is `~/Library/Application Support/Googly/focus-history.json`; a copy is retained on the phone. OpenAI's processing and retention follow your API account's data controls; “not saved by Bluey” is not a promise of zero retention by OpenAI. Pause before opening anything you don't want shared.
 
@@ -35,6 +35,17 @@ Related tutorials, focused research, reading and waiting for a build can support
 - Responses (`gpt-5.5`, structured output, `store: false`, eight-second wording timeout) writes one gentle sentence. A failed extra capture or wording request falls back to “Are you sure you're on task right now?” It can select only an existing OCR line, with an exact matching quote. The app re-reads its position and checks the foreground app before pointing. Ambiguous or changed targets get a bubble alone. The same nudge text also appears briefly on the phone, alongside its chirp.
 
 Sessions show a rectangular timeline on iPhone: green on-task samples, peach off-task samples, grey unknown/unavailable/unchecked time. The main face screen also shows the latest **On task**, **Off task** or uncertain status. Tap the timeline or **On task**, **Off task**, or **Unknown** to inspect individual checks, their category probabilities and separate overall decision confidence. Older checks may have only the Off task probability; missing values are labelled, never inferred. Failed or stale checks have no valid confidence estimate. The timeline represents periodic observations rather than an exact time audit. Paused time is excluded.
+
+## That's work: appeals and session locks
+
+When a nudge fires, Bluey also sends you back to where you last worked on task: it activates that app, or opens the last work page in the same browser. Nothing is closed.
+
+If the nudge was wrong, tap the briefcase on the phone (or **That's Work: Check Again** in the Mac menu, or the dashboard button with an optional reason). The last off-task screenshot, kept in memory only, goes to a stronger reasoning model (`gpt-6.2-sol`, Responses, `store: false`) together with the task, the site or app and your reason.
+
+- **Work:** that site (browser) or app counts as work for the rest of the session. Later checks there skip the screenshot and API call and are marked *approved* in the timeline.
+- **Not work:** that site or app is **locked for the session**. Whenever it comes to the front, Bluey navigates the locked tab back to your work page (or a blank page) or hides the app, then returns you to work with a 🔒 bubble. The lock shows on the Mac countdown (“🔒 LOCKED: …”), in the Mac menu, on the phone's face screen and in the session history.
+
+Sites are read from Safari, Chrome, Brave, Edge and Arc via Automation (macOS asks once). If the tab can't be read, nothing is locked, so a lock never covers a whole browser. Locks and approvals store only the site or app name, and end with the session.
 
 ## Build and run
 

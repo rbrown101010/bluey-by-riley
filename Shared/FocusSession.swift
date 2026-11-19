@@ -15,6 +15,8 @@ public struct FocusCheck: Codable, Identifiable, Equatable, Sendable {
     /// Focus-clock seconds represented by this observation; older checks used 30.
     public var sampleDuration: Double?
     public var nudged = false
+    /// Skipped because the user's appeal verified this app or site as work for the session.
+    public var approved: Bool?
     public init(elapsed: Double, activity: FocusActivity, probability: Double = 0, confidence: Double = 0,
                 probabilities: [String: Double]? = nil, sampleDuration: Double? = nil) {
         self.elapsed = elapsed; self.activity = activity
@@ -47,6 +49,10 @@ public struct FocusSession: Codable, Identifiable, Equatable, Sendable {
     public var developerMode: Bool?
     public var usedDeveloperMode: Bool?
     public var realElapsed: Double?
+    /// Sites or apps a verified appeal accepted as work, or locked for the rest of this session.
+    public var approved: [String]?
+    public var blocked: [String]?
+    public var appealing: Bool?
     public var isDeveloperMode: Bool { developerMode == true }
     public var clockRate: Double { isDeveloperMode ? 4 : 1 }
     public var checkInterval: Double { isDeveloperMode ? 10 : 30 } // real seconds

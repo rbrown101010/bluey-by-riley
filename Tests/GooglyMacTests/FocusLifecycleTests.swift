@@ -151,4 +151,52 @@ final class FocusLifecycleTests: XCTestCase {
         await Task.yield(); XCTAssertEqual(app.current?.checks.filter { $0.activity != .paused }.count, 0)
         _ = app.end()
     }
+    @MainActor func testAppealLocksOrApprovesTheOffTaskSite() async throws {
+        let off = try FocusDecision.decode(Data(#"{"answers":[{"name":"activity","type":"choice","choice":"off_task","confidence":0.9,"probabilities":[{"value":"on_task","probability":0.05},{"value":"off_task","probability":0.9},{"value":"uncertain","probability":0.05}]}]}"#.utf8))
+        let on = try FocusDecision.decode(Data(#"{"answers":[{"name":"activity","type":"choice","choice":"on_task","confidence":0.9,"probabilities":[{"value":"on_task","probability":0.9},{"value":"off_task","probability":0.05},{"value":"uncertain","probability":0.05}]}]}"#.utf8))
+        let work = FocusContext(bundleID: "com.apple.dt.Xcode", name: "Xcode", host: nil, url: nil, isBrowser: false)
+        let feed = FocusContext(bundleID: "com.apple.Safari", name: "Safari", host: "reddit.com", url: nil, isBrowser: true)
+        for isWork in [false, true] {
+            var time = 100.0, front = work, classified = 0
+            var leaves: [(from: String?, to: String?, lock: Bool)] = []
+            let verdict = expectation(description: "Appeal answered")
+            let app = FocusCompanion(now: { time }, permission: { true }, hasKey: { true }, screenUnlocked: { true },
+                capture: { ScreenSnapshot(jpeg: Data(), lines: [], size: .zero) },
+                classify: { _, _, _ in classified += 1; return front == work ? on : off },
+                prepareNudge: { _, _ in FocusAPI.Nudge(message: "Back to it?", target: nil) }, showsCountdown: false,
+                historyFile: URL(fileURLWithPath: "/tmp/bluey-appeal-\(isWork).json"), settings: nil,
+                frontContext: { front },
+                verifyAppeal: { _, _, key, _ in
+                    XCTAssertEqual(key, "reddit.com"); defer { verdict.fulfill() }
+                    return FocusAPI.Appeal(isWork: isWork, reason: "Checked.")
+                },
+                leave: { leaves.append(($0.key, $1?.key, $2)) })
+            app.setDeveloperMode(true); app.heartbeat(); _ = app.start(task: "Build Bluey")
+            func run(_ seconds: Int) async { for _ in 0..<seconds { time += 1; app.heartbeat(); app.tick(); await Task.yield(); await Task.yield() } }
+            XCTAssertEqual(app.appeal(), "There's no off-task check to appeal yet.")
+            await run(11)   // on-task check in Xcode remembers the work context
+            front = feed
+            await run(30)   // repeated off-task checks nudge and send the user back to Xcode
+            XCTAssertTrue(leaves.contains { $0.from == "reddit.com" && $0.to == "Xcode" && !$0.lock })
+            _ = app.appeal(reason: "Researching Reddit posts for the app")
+            XCTAssertEqual(app.current?.appealing, true)
+            await fulfillment(of: [verdict], timeout: 2)
+            await Task.yield(); await Task.yield()
+            XCTAssertNil(app.current?.appealing)
+            if isWork {
+                XCTAssertEqual(app.current?.approved, ["reddit.com"])
+                let before = classified
+                await run(11)
+                XCTAssertEqual(classified, before, "Approved sites skip the classification call")
+                XCTAssertEqual(app.current?.checks.last?.approved, true)
+            } else {
+                XCTAssertEqual(app.current?.blocked, ["reddit.com"])
+                XCTAssertTrue(leaves.contains { $0.from == "reddit.com" && $0.to == "Xcode" && $0.lock })
+                let count = leaves.count
+                await run(3)
+                XCTAssertGreaterThan(leaves.count, count, "A locked site keeps sending the user back")
+            }
+            _ = app.end()
+        }
+    }
 }
