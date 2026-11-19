@@ -1128,7 +1128,7 @@ class Component extends DCLogic {
       // Bluey: the eyes follow a point (the cursor), -1…1 in both directions.
       var gs = self._gs || (self._gs = { x: gz.x, y: gz.y });
       gs.x += (gz.x - gs.x) * 0.2; gs.y += (gz.y - gs.y) * 0.2;  // eased, so updates a few times a second still glide
-      lookX = 14 * gs.x; lookY = 9 * gs.y;
+      // The eyes stay put on his screen; the head turn below does the looking.
     } else {
       if (eyesOpen && !actId && !reactId && (cur === 'neutral' || cur === 'focus')) { lookX = 2.2 * Math.sin(tn * 0.55) * Math.sin(tn * 0.23 + 1); }
       if (md.L.dx || md.L.dy < 0) { lookX += 1.6 * Math.sin(tn * 1.4); lookY += 0.8 * Math.sin(tn * 2.1); }
@@ -1143,13 +1143,10 @@ class Component extends DCLogic {
     if (eyesOpen) { v[0] += lookX; v[2] += lookX; v[6] += lookX; v[8] += lookX; v[1] += lookY; v[3] += lookY; v[7] += lookY; v[9] += lookY; }
     if (gz && !actId && !booting) {
       // Bluey: the whole head turns toward where he looks (a real 3D turn, so the far eye and the far
-      // side of the mouth get smaller by perspective). The face also slides a little on its screen.
+      // side of the mouth get smaller by perspective). Face and head move as one piece.
       var turn = self._gs.x, nod = self._gs.y;
-      var mx = 0.8 * lookX, my = 0.6 * lookY;
-      v[12] += mx; v[14] += mx; v[13] += my; v[15] += my;
       var svgEl = self._host && self._host.shadowRoot && self._host.shadowRoot.querySelector('svg.ka');
       if (svgEl) svgEl.style.transform = 'perspective(900px) rotateY(' + nr(26 * turn) + 'deg) rotateX(' + nr(-12 * nod) + 'deg)';
-      for (var bi = 20; bi < 32; bi += 2) { v[bi] += 0.9 * lookX; v[bi + 1] += 0.8 * lookY; }
     }
     var bl = eyesOpen ? 1 - 0.92 * (st.blink || 0) : 1;
     if (booting) { bodyTy = 0; bodyS = 1; bodyR = 0; }
